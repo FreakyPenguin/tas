@@ -132,8 +132,17 @@ clean:
 	  tools/tracetool tools/statetool tools/scaletool \
 	  tas/tas
 
+INST_HEADERS= \
+	include/tas_fpif.h \
+	include/tas_spif.h \
+	include/tas_packet_defs.h \
+	include/tas_utils.h \
+	lib/tas/include/tas_ll.h \
+	lib/tas/include/tas_ll_connect.h \
+	lib/sockets/include/tas_sockets.h
+
 install: tas/tas lib/libtas_sockets.so lib/libtas_interpose.so \
-  lib/libtas.so tools/statetool
+  lib/libtas.so tools/statetool $(INST_HEADERS)
 	mkdir -p $(DESTDIR)$(SBINDIR)
 	cp tas/tas $(DESTDIR)$(SBINDIR)/tas
 	cp tools/statetool $(DESTDIR)$(SBINDIR)/tas-statetool
@@ -141,6 +150,8 @@ install: tas/tas lib/libtas_sockets.so lib/libtas_interpose.so \
 	cp lib/libtas_interpose.so $(DESTDIR)$(LIBDIR)/libtas_interpose.so
 	cp lib/libtas_sockets.so $(DESTDIR)$(LIBDIR)/libtas_sockets.so
 	cp lib/libtas.so $(DESTDIR)$(LIBDIR)/libtas.so
+	mkdir -p $(DESTDIR)$(INCDIR)
+	cp $(INST_HEADERS) $(DESTDIR)$(INCDIR)/
 
 uninstall:
 	rm -f $(DESTDIR)$(SBINDIR)/tas
@@ -148,5 +159,6 @@ uninstall:
 	rm -f $(DESTDIR)$(LIBDIR)/libtas_interpose.so
 	rm -f $(DESTDIR)$(LIBDIR)/libtas_sockets.so
 	rm -f $(DESTDIR)$(LIBDIR)/libtas.so
+	rm -f $(addprefix $(DESTDIR)$(INCDIR)/,$(notdir $(INST_HEADERS)))
 
 .PHONY: all tests clean docs install uninstall run-tests
