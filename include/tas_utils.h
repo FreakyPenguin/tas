@@ -22,8 +22,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef UTILS_H_
-#define UTILS_H_
+#ifndef TAS_UTILS_H_
+#define TAS_UTILS_H_
 
 #include <stdint.h>
 #include <arpa/inet.h>
@@ -89,4 +89,4 @@ static inline void util_prefetch0(const volatile void *p)
 
 
 
-#endif /* ndef UTILS_H_ */
+#endif /* ndef TAS_UTILS_H_ */

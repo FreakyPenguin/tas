@@ -28,7 +28,7 @@
 #include <ctype.h>
 #include <arpa/inet.h>
 #include <utils_timeout.h>
-#include <utils.h>
+#include <tas_utils.h>
 #include <tas_fpif.h>
 #include <assert.h>
 #include <unistd.h>

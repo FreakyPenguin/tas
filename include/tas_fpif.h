@@ -26,8 +26,8 @@
 #define TAS_FPIF_H_
 
 #include <stdint.h>
-#include <utils.h>
-#include <packet_defs.h>
+#include <tas_utils.h>
+#include <tas_packet_defs.h>
 
 
 #define FLEXNIC_HUGE_PREFIX "/dev/hugepages"

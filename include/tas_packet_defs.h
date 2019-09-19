@@ -22,12 +22,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef PACKET_DEFS_H_
-#define PACKET_DEFS_H_
+#ifndef TAS_PACKET_DEFS_H_
+#define TAS_PACKET_DEFS_H_
 
 #include <stdint.h>
 
-#include <utils.h>
+#include <tas_utils.h>
 
 /******************************************************************************/
 /* Ethernet */
@@ -218,4 +218,4 @@ struct pkt_tcp {
   struct tcp_hdr tcp;
 } __attribute__ ((packed));
 
-#endif
+#endif /* ndef TAS_PACKET_DEFS_H_ */

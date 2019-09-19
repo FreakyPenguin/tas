@@ -33,8 +33,8 @@
 #include <rte_hash_crc.h>
 
 #include <tas.h>
-#include <packet_defs.h>
-#include <utils.h>
+#include <tas_packet_defs.h>
+#include <tas_utils.h>
 #include <utils_rng.h>
 #include "internal.h"
 

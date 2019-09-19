@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
-#include <utils.h>
+#include <tas_utils.h>
 
 #include <tas.h>
 #include "internal.h"

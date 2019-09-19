@@ -29,8 +29,8 @@
 #include <unistd.h>
 
 #include <tas.h>
-#include <packet_defs.h>
-#include <utils.h>
+#include <tas_packet_defs.h>
+#include <tas_utils.h>
 #include "internal.h"
 
 #define ARP_DEBUG(x...) do { } while (0)

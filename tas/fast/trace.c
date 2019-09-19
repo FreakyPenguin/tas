@@ -26,7 +26,7 @@
 #include <assert.h>
 
 #include <tas_trace.h>
-#include <utils.h>
+#include <tas_utils.h>
 #include "internal.h"
 
 #ifdef FLEXNIC_TRACING

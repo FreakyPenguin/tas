@@ -36,8 +36,8 @@
 
 #include <tas_trace.h>
 #include <tas_fpif.h>
-#include <packet_defs.h>
-#include <utils.h>
+#include <tas_packet_defs.h>
+#include <tas_utils.h>
 
 
 struct trace {

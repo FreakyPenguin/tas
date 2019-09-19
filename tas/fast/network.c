@@ -37,7 +37,7 @@
 #include <rte_version.h>
 #include <rte_spinlock.h>
 
-#include <utils.h>
+#include <tas_utils.h>
 #include <utils_rng.h>
 #include <tas_fpif.h>
 #include "internal.h"

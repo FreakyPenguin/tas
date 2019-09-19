@@ -26,7 +26,7 @@
 #define TAS_H_
 
 #include <config.h>
-#include <packet_defs.h>
+#include <tas_packet_defs.h>
 
 extern struct configuration config;
 

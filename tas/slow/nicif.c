@@ -29,8 +29,8 @@
 
 #include <tas.h>
 #include <tas_fpif.h>
-#include <packet_defs.h>
-#include <utils.h>
+#include <tas_packet_defs.h>
+#include <tas_utils.h>
 #include <utils_timeout.h>
 #include <utils_sync.h>
 #include "internal.h"

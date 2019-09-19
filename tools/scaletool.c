@@ -31,7 +31,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <tas_ll.h>
-#include <utils.h>
+#include <tas_utils.h>
 
 int flextcp_kernel_reqscale(struct flextcp_context *ctx, uint32_t cores);
 
