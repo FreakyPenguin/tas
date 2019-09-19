@@ -22,8 +22,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef KERNEL_APPIF_H_
-#define KERNEL_APPIF_H_
+#ifndef TAS_SPIF_H_
+#define TAS_SPIF_H_
 
 #include <stdint.h>
 
@@ -223,4 +223,4 @@ struct kernel_appin {
 
 STATIC_ASSERT(sizeof(struct kernel_appin) == 64, kernel_appin_size);
 
-#endif /* ndef KERNEL_APPIF_H_ */
+#endif /* ndef TAS_SPIF_H_ */

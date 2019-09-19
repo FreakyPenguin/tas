@@ -33,9 +33,9 @@
 #include <errno.h>
 
 #include <tas_ll_connect.h>
-#include <kernel_appif.h>
+#include <tas_spif.h>
 #include <tas_ll.h>
-#include <tas_memif.h>
+#include <tas_fpif.h>
 #include <utils_timeout.h>
 #include "internal.h"
 

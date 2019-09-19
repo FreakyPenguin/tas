@@ -28,7 +28,7 @@
  *
  * The application-kernel interface consists of two parts: per-application unix
  * socket for setup, and per-core application context queues for normal
- * operation. The message format for both those is defined in kernel_appif.h.
+ * operation. The message format for both those is defined in tas_spif.h.
  *
  * During application initialization the application opens a Unix stream socket
  * to the kernel. This stream socket is then used to negotiate creation of one
@@ -56,9 +56,9 @@
 #include <tas.h>
 #include "internal.h"
 #include "appif.h"
-#include <kernel_appif.h>
+#include <tas_spif.h>
 #include <utils_nbqueue.h>
-#include <tas_memif.h>
+#include <tas_fpif.h>
 #include <fastpath.h>
 
 /** epoll data for listening socket */

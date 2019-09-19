@@ -34,7 +34,7 @@
 #include <assert.h>
 
 #include <tas_ll_connect.h>
-#include <tas_memif.h>
+#include <tas_fpif.h>
 
 static void *map_region(const char *name, size_t len);
 static void *map_region_huge(const char *name, size_t len)

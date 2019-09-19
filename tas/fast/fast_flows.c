@@ -27,7 +27,7 @@
 #include <rte_ip.h>
 #include <rte_hash_crc.h>
 
-#include <tas_memif.h>
+#include <tas_fpif.h>
 #include <utils_sync.h>
 
 #include "internal.h"

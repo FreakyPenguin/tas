@@ -30,7 +30,7 @@
 
 #include <rte_interrupts.h>
 
-#include <tas_memif.h>
+#include <tas_fpif.h>
 #include <utils_rng.h>
 
 #define BATCH_SIZE 16

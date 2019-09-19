@@ -39,7 +39,7 @@
 
 #include <utils.h>
 #include <utils_rng.h>
-#include <tas_memif.h>
+#include <tas_fpif.h>
 #include "internal.h"
 
 #define PERTHREAD_MBUFS 2048

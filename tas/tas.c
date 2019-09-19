@@ -37,7 +37,7 @@
 #include <rte_cycles.h>
 #include <rte_malloc.h>
 
-#include <tas_memif.h>
+#include <tas_fpif.h>
 #include <utils_timeout.h>
 
 #include <tas.h>

@@ -28,7 +28,7 @@
 #include <unistd.h>
 
 #include <tas.h>
-#include <tas_memif.h>
+#include <tas_fpif.h>
 #include <packet_defs.h>
 #include <utils.h>
 #include <utils_timeout.h>

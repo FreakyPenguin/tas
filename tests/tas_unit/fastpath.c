@@ -10,7 +10,7 @@
 #include <rte_mbuf.h>
 
 #include <tas.h>
-#include <tas_memif.h>
+#include <tas_fpif.h>
 #include "../../tas/include/config.h"
 #include "../../tas/fast/internal.h"
 #include "../../tas/fast/fastemu.h"

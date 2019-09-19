@@ -26,7 +26,7 @@
 #define INTERNAL_H_
 
 #include <tas_ll.h>
-#include <tas_memif.h>
+#include <tas_fpif.h>
 #include <utils_circ.h>
 
 #define OPAQUE_PTR(x) ((void *) (uintptr_t) (x))

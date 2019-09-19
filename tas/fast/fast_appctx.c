@@ -25,7 +25,7 @@
 #include <assert.h>
 #include <rte_config.h>
 
-#include <tas_memif.h>
+#include <tas_fpif.h>
 
 #include "internal.h"
 #include "fastemu.h"

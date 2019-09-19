@@ -26,7 +26,7 @@
 #define FLEXNIC_DRIVER_H_
 
 #include <stddef.h>
-#include <tas_memif.h>
+#include <tas_fpif.h>
 
 /**
  * Connect to flexnic. Returns 0 on success, < 0 on error, > 0 if flexnic is not

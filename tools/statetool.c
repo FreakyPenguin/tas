@@ -28,7 +28,7 @@
 #include <string.h>
 
 #include <tas_ll_connect.h>
-#include <tas_memif.h>
+#include <tas_fpif.h>
 
 struct flextcp_pl_mem *plm;
 

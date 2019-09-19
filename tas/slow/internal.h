@@ -33,7 +33,7 @@
 #include <utils_nbqueue.h>
 #include <utils_timeout.h>
 
-#include <tas_memif.h>
+#include <tas_fpif.h>
 
 struct config_route;
 struct connection;

@@ -25,7 +25,7 @@
 #ifndef TCP_COMMON_H_
 #define TCP_COMMON_H_
 
-#include <tas_memif.h>
+#include <tas_fpif.h>
 #include <utils.h>
 
 #define ALLOW_FUTURE_ACKS 1

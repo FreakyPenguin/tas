@@ -4,8 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <kernel_appif.h>
-#include <tas_memif.h>
+#include <tas_spif.h>
+#include <tas_fpif.h>
 
 struct harness_params {
   size_t num_ctxs;

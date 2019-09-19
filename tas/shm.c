@@ -39,7 +39,7 @@
 #include <rte_malloc.h>
 
 #include <tas.h>
-#include <tas_memif.h>
+#include <tas_fpif.h>
 
 void *tas_shm = NULL;
 struct flextcp_pl_mem *fp_state = NULL;

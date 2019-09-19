@@ -29,7 +29,7 @@
 #include <arpa/inet.h>
 #include <utils_timeout.h>
 #include <utils.h>
-#include <tas_memif.h>
+#include <tas_fpif.h>
 #include <assert.h>
 #include <unistd.h>
 

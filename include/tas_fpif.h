@@ -22,8 +22,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef FLEXTCP_PLIF_H_
-#define FLEXTCP_PLIF_H_
+#ifndef TAS_FPIF_H_
+#define TAS_FPIF_H_
 
 #include <stdint.h>
 #include <utils.h>
@@ -343,4 +343,4 @@ struct flextcp_pl_mem {
 
 void util_flexnic_kick(struct flextcp_pl_appctx *ctx, uint32_t ts_us);
 
-#endif /* ndef FLEXTCP_PLIF_H_ */
+#endif /* ndef TAS_FPIF_H_ */

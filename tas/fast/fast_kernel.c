@@ -26,7 +26,7 @@
 #include <unistd.h>
 #include <rte_config.h>
 
-#include <tas_memif.h>
+#include <tas_fpif.h>
 #include <utils_timeout.h>
 
 #include "internal.h"

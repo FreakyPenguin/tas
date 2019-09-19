@@ -29,7 +29,7 @@
 #include <stdint.h>
 
 #include "internal.h"
-#include <kernel_appif.h>
+#include <tas_spif.h>
 
 struct app_doorbell {
   uint32_t id;

@@ -29,7 +29,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
-#include <kernel_appif.h>
+#include <tas_spif.h>
 #include <utils_timeout.h>
 #include "internal.h"
 

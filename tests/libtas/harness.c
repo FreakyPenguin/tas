@@ -5,7 +5,7 @@
 #include "harness.h"
 #include "../testutils.h"
 #include <tas_ll.h>
-#include <tas_memif.h>
+#include <tas_fpif.h>
 
 struct harness_fpc_ctx {
   struct flextcp_pl_atx *atx_base;

@@ -35,7 +35,7 @@
 #include <inttypes.h>
 
 #include <tas_trace.h>
-#include <tas_memif.h>
+#include <tas_fpif.h>
 #include <packet_defs.h>
 #include <utils.h>
 

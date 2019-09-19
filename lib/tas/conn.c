@@ -28,7 +28,7 @@
 #include <string.h>
 
 #include <tas_ll.h>
-#include <kernel_appif.h>
+#include <tas_spif.h>
 #include "internal.h"
 
 static void connection_init(struct flextcp_connection *conn);
