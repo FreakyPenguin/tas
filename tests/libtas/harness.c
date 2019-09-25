@@ -287,12 +287,12 @@ void flextcp_kernel_kick(void)
   harness.num_kicks++;
 }
 
-int flexnic_driver_internal(void **int_mem_start)
+int tas_ll_connect_internal(void **int_mem_start)
 {
   return -1;
 }
 
-int flexnic_driver_connect(struct flexnic_info **p_info, void **p_mem_start)
+int tas_ll_connect(struct flexnic_info **p_info, void **p_mem_start)
 {
   *p_info = NULL;
   /* hack: set mem start to 0 so we can just use pointers as offsets */
@@ -300,7 +300,7 @@ int flexnic_driver_connect(struct flexnic_info **p_info, void **p_mem_start)
   return 0;
 }
 
-int flextcp_kernel_newctx(struct flextcp_context *ctx)
+int flextcp_kernel_newctx(struct tas_context *ctx)
 {
   size_t i;
   struct harness_ctx *hc = &harness.ctxs[harness.next_ctx];

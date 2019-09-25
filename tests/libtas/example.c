@@ -15,52 +15,52 @@
 
 static void test_poll_empty(void *p)
 {
-  struct flextcp_context ctx;
-  struct flextcp_event evs[4];
+  struct tas_context ctx;
+  struct tas_ll_event evs[4];
   int num;
 
-  if (flextcp_init() != 0)
-    test_error("flextcp_init failed");
+  if (tas_ll_init() != 0)
+    test_error("tas_ll_init failed");
 
   test_randinit(&ctx, sizeof(ctx));
-  if (flextcp_context_create(&ctx) != 0)
-    test_error("flextcp_context_create failed");
+  if (tas_context_create(&ctx) != 0)
+    test_error("tas_context_create failed");
 
-  num = flextcp_context_poll(&ctx, 4, evs);
+  num = tas_context_poll(&ctx, 4, evs);
   test_assert("success, no events 1", num == 0);
 
-  num = flextcp_context_poll(&ctx, 4, evs);
+  num = tas_context_poll(&ctx, 4, evs);
   test_assert("success, no events 2", num == 0);
 }
 
 static void test_connect_success(void *p)
 {
-  struct flextcp_context ctx;
-  struct flextcp_connection conn;
-  struct flextcp_event evs[4];
+  struct tas_context ctx;
+  struct tas_ll_connection conn;
+  struct tas_ll_event evs[4];
   int num;
   int n;
   void *rxbuf, *txbuf, *buf;
   ssize_t res;
 
-  if (flextcp_init() != 0)
-    test_error("flextcp_init failed");
+  if (tas_ll_init() != 0)
+    test_error("tas_ll_init failed");
 
   test_randinit(&ctx, sizeof(ctx));
-  if (flextcp_context_create(&ctx) != 0)
-    test_error("flextcp_context_create failed");
+  if (tas_context_create(&ctx) != 0)
+    test_error("tas_context_create failed");
 
   /* initiate connect */
   test_randinit(&conn, sizeof(conn));
-  if (flextcp_connection_open(&ctx, &conn, TEST_IP, TEST_PORT) != 0)
-    test_error("flextcp_connection_open failed");
+  if (tas_ll_connection_open(&ctx, &conn, TEST_IP, TEST_PORT) != 0)
+    test_error("tas_ll_connection_open failed");
 
   /* check aout entry for new connection request */
   n = harness_aout_pull_connopen(0, (uintptr_t) &conn, TEST_IP, TEST_PORT, 0);
   test_assert("pulling conn open request off aout", n == 0);
 
   /* check that there is no events on the queue yet */
-  num = flextcp_context_poll(&ctx, 4, evs);
+  num = tas_context_poll(&ctx, 4, evs);
   test_assert("success, no events 1", num == 0);
 
   /* push ain entry for new connection response */
@@ -71,14 +71,14 @@ static void test_connect_success(void *p)
   test_assert("harness_ain_push_connopened success", n == 0);
 
   /* check that there is exactly one event in the context yet */
-  num = flextcp_context_poll(&ctx, 4, evs);
+  num = tas_context_poll(&ctx, 4, evs);
   test_assert("success 1 event", num == 1);
-  test_assert("ctxev_type", evs[0].event_type == FLEXTCP_EV_CONN_OPEN);
+  test_assert("ctxev_type", evs[0].event_type == TAS_LL_EV_CONN_OPEN);
   test_assert("ctxev_status", evs[0].ev.conn_open.status == 0);
   test_assert("ctxev_conn", evs[0].ev.conn_open.conn == &conn);
 
   /* make sure that allocated tx buffer is available */
-  res = flextcp_connection_tx_alloc(&conn, 32, &buf);
+  res = tas_ll_connection_tx_alloc(&conn, 32, &buf);
   test_assert("tx alloc len", res == 32);
   test_assert("tx alloc buf", buf == txbuf);
 
@@ -87,9 +87,9 @@ static void test_connect_success(void *p)
   test_assert("harness_arx_push success", n == 0);
 
   /* check that there is no events on the queue yet */
-  num = flextcp_context_poll(&ctx, 4, evs);
+  num = tas_context_poll(&ctx, 4, evs);
   test_assert("one rx event poll", num == 1);
-  test_assert("rxev_type", evs[0].event_type == FLEXTCP_EV_CONN_RECEIVED);
+  test_assert("rxev_type", evs[0].event_type == TAS_LL_EV_CONN_RECEIVED);
   test_assert("rxev_buf", evs[0].ev.conn_received.buf == rxbuf);
   test_assert("rxev_len", evs[0].ev.conn_received.len == 32);
   test_assert("rxev_conn", evs[0].ev.conn_received.conn == &conn);
@@ -97,30 +97,30 @@ static void test_connect_success(void *p)
 
 static void test_connect_fail(void *p)
 {
-  struct flextcp_context ctx;
-  struct flextcp_connection conn;
-  struct flextcp_event evs[4];
+  struct tas_context ctx;
+  struct tas_ll_connection conn;
+  struct tas_ll_event evs[4];
   int num;
   int n;
 
-  if (flextcp_init() != 0)
-    test_error("flextcp_init failed");
+  if (tas_ll_init() != 0)
+    test_error("tas_ll_init failed");
 
   test_randinit(&ctx, sizeof(ctx));
-  if (flextcp_context_create(&ctx) != 0)
-    test_error("flextcp_context_create failed");
+  if (tas_context_create(&ctx) != 0)
+    test_error("tas_context_create failed");
 
   /* initiate connect */
   test_randinit(&conn, sizeof(conn));
-  if (flextcp_connection_open(&ctx, &conn, TEST_IP, TEST_PORT) != 0)
-    test_error("flextcp_connection_open failed");
+  if (tas_ll_connection_open(&ctx, &conn, TEST_IP, TEST_PORT) != 0)
+    test_error("tas_ll_connection_open failed");
 
   /* check aout entry for new connection request */
   n = harness_aout_pull_connopen(0, (uintptr_t) &conn, TEST_IP, TEST_PORT, 0);
   test_assert("pulling conn open request off aout", n == 0);
 
   /* check that there is no events on the queue yet */
-  num = flextcp_context_poll(&ctx, 4, evs);
+  num = tas_context_poll(&ctx, 4, evs);
   test_assert("success, no events 1", num == 0);
 
   /* push ain entry for new connection response */
@@ -128,40 +128,40 @@ static void test_connect_fail(void *p)
   test_assert("harness_ain_push_connopen_failed success", n == 0);
 
   /* check that there is exactly one event in the context yet */
-  num = flextcp_context_poll(&ctx, 4, evs);
+  num = tas_context_poll(&ctx, 4, evs);
   test_assert("success 1 event", num == 1);
-  test_assert("ctxev_type", evs[0].event_type == FLEXTCP_EV_CONN_OPEN);
+  test_assert("ctxev_type", evs[0].event_type == TAS_LL_EV_CONN_OPEN);
   test_assert("ctxev_status", evs[0].ev.conn_open.status == 1);
   test_assert("ctxev_conn", evs[0].ev.conn_open.conn == &conn);
 }
 
 static void test_full_rxbuf(void *p)
 {
-  struct flextcp_context ctx;
-  struct flextcp_connection conn;
-  struct flextcp_event evs[4];
+  struct tas_context ctx;
+  struct tas_ll_connection conn;
+  struct tas_ll_event evs[4];
   int num;
   int n;
   void *rxbuf, *txbuf;
 
-  if (flextcp_init() != 0)
-    test_error("flextcp_init failed");
+  if (tas_ll_init() != 0)
+    test_error("tas_ll_init failed");
 
   test_randinit(&ctx, sizeof(ctx));
-  if (flextcp_context_create(&ctx) != 0)
-    test_error("flextcp_context_create failed");
+  if (tas_context_create(&ctx) != 0)
+    test_error("tas_context_create failed");
 
   /* initiate connect */
   test_randinit(&conn, sizeof(conn));
-  if (flextcp_connection_open(&ctx, &conn, TEST_IP, TEST_PORT) != 0)
-    test_error("flextcp_connection_open failed");
+  if (tas_ll_connection_open(&ctx, &conn, TEST_IP, TEST_PORT) != 0)
+    test_error("tas_ll_connection_open failed");
 
   /* check aout entry for new connection request */
   n = harness_aout_pull_connopen(0, (uintptr_t) &conn, TEST_IP, TEST_PORT, 0);
   test_assert("pulling conn open request off aout", n == 0);
 
   /* check that there is no events on the queue yet */
-  num = flextcp_context_poll(&ctx, 4, evs);
+  num = tas_context_poll(&ctx, 4, evs);
   test_assert("success, no events 1", num == 0);
 
   /* push ain entry for new connection response */
@@ -172,9 +172,9 @@ static void test_full_rxbuf(void *p)
   test_assert("harness_ain_push_connopened success", n == 0);
 
   /* check that there is exactly one event in the context yet */
-  num = flextcp_context_poll(&ctx, 4, evs);
+  num = tas_context_poll(&ctx, 4, evs);
   test_assert("success 1 event", num == 1);
-  test_assert("ctxev_type", evs[0].event_type == FLEXTCP_EV_CONN_OPEN);
+  test_assert("ctxev_type", evs[0].event_type == TAS_LL_EV_CONN_OPEN);
   test_assert("ctxev_status", evs[0].ev.conn_open.status == 0);
   test_assert("ctxev_conn", evs[0].ev.conn_open.conn == &conn);
 
@@ -187,19 +187,19 @@ static void test_full_rxbuf(void *p)
   test_assert("harness_arx_push success", n == 0);
 
   /* check that there is no events on the queue yet */
-  num = flextcp_context_poll(&ctx, 4, evs);
+  num = tas_context_poll(&ctx, 4, evs);
   test_assert("one rx event poll", num == 1);
-  test_assert("rxev_type", evs[0].event_type == FLEXTCP_EV_CONN_RECEIVED);
+  test_assert("rxev_type", evs[0].event_type == TAS_LL_EV_CONN_RECEIVED);
   test_assert("rxev_buf", evs[0].ev.conn_received.buf == rxbuf);
   test_assert("rxev_len", evs[0].ev.conn_received.len == 1024);
   test_assert("rxev_conn", evs[0].ev.conn_received.conn == &conn);
 
   /* free rxbuffer bytes */
-  n = flextcp_connection_rx_done(&ctx, &conn, 1024);
-  test_assert("flextcp_connection_rx_done success", n == 0);
+  n = tas_ll_connection_rx_done(&ctx, &conn, 1024);
+  test_assert("tas_ll_connection_rx_done success", n == 0);
 
   /* check that there is no events on the queue yet */
-  num = flextcp_context_poll(&ctx, 4, evs);
+  num = tas_context_poll(&ctx, 4, evs);
   test_assert("success, no events 2", num == 0);
 
   /* process rx free */
@@ -215,19 +215,19 @@ static void test_full_rxbuf(void *p)
   test_assert("harness_arx_push success", n == 0);
 
   /* check that there is no events on the queue yet */
-  num = flextcp_context_poll(&ctx, 4, evs);
+  num = tas_context_poll(&ctx, 4, evs);
   test_assert("one rx event poll", num == 1);
-  test_assert("rxev_type", evs[0].event_type == FLEXTCP_EV_CONN_RECEIVED);
+  test_assert("rxev_type", evs[0].event_type == TAS_LL_EV_CONN_RECEIVED);
   test_assert("rxev_buf", evs[0].ev.conn_received.buf == rxbuf);
   test_assert("rxev_len", evs[0].ev.conn_received.len == 1024);
   test_assert("rxev_conn", evs[0].ev.conn_received.conn == &conn);
 
   /* free rxbuffer bytes */
-  n = flextcp_connection_rx_done(&ctx, &conn, 1024);
-  test_assert("flextcp_connection_rx_done success", n == 0);
+  n = tas_ll_connection_rx_done(&ctx, &conn, 1024);
+  test_assert("tas_ll_connection_rx_done success", n == 0);
 
   /* check that there is no events on the queue yet */
-  num = flextcp_context_poll(&ctx, 4, evs);
+  num = tas_context_poll(&ctx, 4, evs);
   test_assert("success, no events 2", num == 0);
 
   /* process rx free */
@@ -237,32 +237,32 @@ static void test_full_rxbuf(void *p)
 
 static void test_full_txbuf(void *p)
 {
-  struct flextcp_context ctx;
-  struct flextcp_connection conn;
-  struct flextcp_event evs[4];
+  struct tas_context ctx;
+  struct tas_ll_connection conn;
+  struct tas_ll_event evs[4];
   ssize_t res;
   int num;
   int n;
   void *rxbuf, *txbuf, *buf;
 
-  if (flextcp_init() != 0)
-    test_error("flextcp_init failed");
+  if (tas_ll_init() != 0)
+    test_error("tas_ll_init failed");
 
   test_randinit(&ctx, sizeof(ctx));
-  if (flextcp_context_create(&ctx) != 0)
-    test_error("flextcp_context_create failed");
+  if (tas_context_create(&ctx) != 0)
+    test_error("tas_context_create failed");
 
   /* initiate connect */
   test_randinit(&conn, sizeof(conn));
-  if (flextcp_connection_open(&ctx, &conn, TEST_IP, TEST_PORT) != 0)
-    test_error("flextcp_connection_open failed");
+  if (tas_ll_connection_open(&ctx, &conn, TEST_IP, TEST_PORT) != 0)
+    test_error("tas_ll_connection_open failed");
 
   /* check aout entry for new connection request */
   n = harness_aout_pull_connopen(0, (uintptr_t) &conn, TEST_IP, TEST_PORT, 0);
   test_assert("pulling conn open request off aout", n == 0);
 
   /* check that there is no events on the queue yet */
-  num = flextcp_context_poll(&ctx, 4, evs);
+  num = tas_context_poll(&ctx, 4, evs);
   test_assert("success, no events 1", num == 0);
 
   /* push ain entry for new connection response */
@@ -273,9 +273,9 @@ static void test_full_txbuf(void *p)
   test_assert("harness_ain_push_connopened success", n == 0);
 
   /* check that there is exactly one event in the context yet */
-  num = flextcp_context_poll(&ctx, 4, evs);
+  num = tas_context_poll(&ctx, 4, evs);
   test_assert("success 1 event", num == 1);
-  test_assert("ctxev_type", evs[0].event_type == FLEXTCP_EV_CONN_OPEN);
+  test_assert("ctxev_type", evs[0].event_type == TAS_LL_EV_CONN_OPEN);
   test_assert("ctxev_status", evs[0].ev.conn_open.status == 0);
   test_assert("ctxev_conn", evs[0].ev.conn_open.conn == &conn);
 
@@ -284,15 +284,15 @@ static void test_full_txbuf(void *p)
   /* First message */
 
   /* make sure that allocated tx buffer is available */
-  res = flextcp_connection_tx_alloc(&conn, 1024, &buf);
+  res = tas_ll_connection_tx_alloc(&conn, 1024, &buf);
   test_assert("tx alloc len", res == 1024);
   test_assert("tx alloc buf", buf == txbuf);
 
-  n = flextcp_connection_tx_send(&ctx, &conn, 1024);
-  test_assert("flextcp_connection_tx_send success", n == 0);
+  n = tas_ll_connection_tx_send(&ctx, &conn, 1024);
+  test_assert("tas_ll_connection_tx_send success", n == 0);
 
   /* check that there is no events on the queue yet */
-  num = flextcp_context_poll(&ctx, 4, evs);
+  num = tas_context_poll(&ctx, 4, evs);
   test_assert("one rx event poll", num == 0);
 
   /* process tx bump */
@@ -304,9 +304,9 @@ static void test_full_txbuf(void *p)
   test_assert("harness_arx_push success", n == 0);
 
   /* check that there is a tx buf avail events on the queue*/
-  num = flextcp_context_poll(&ctx, 4, evs);
+  num = tas_context_poll(&ctx, 4, evs);
   test_assert("one rx event poll", num == 1);
-  test_assert("txev_type", evs[0].event_type == FLEXTCP_EV_CONN_SENDBUF);
+  test_assert("txev_type", evs[0].event_type == TAS_LL_EV_CONN_SENDBUF);
   test_assert("txev_conn", evs[0].ev.conn_sendbuf.conn == &conn);
 
 
@@ -314,15 +314,15 @@ static void test_full_txbuf(void *p)
   /* Send message */
 
   /* make sure that allocated tx buffer is available */
-  res = flextcp_connection_tx_alloc(&conn, 1024, &buf);
+  res = tas_ll_connection_tx_alloc(&conn, 1024, &buf);
   test_assert("tx alloc len", res == 1024);
   test_assert("tx alloc buf", buf == txbuf);
 
-  n = flextcp_connection_tx_send(&ctx, &conn, 1024);
-  test_assert("flextcp_connection_tx_send success", n == 0);
+  n = tas_ll_connection_tx_send(&ctx, &conn, 1024);
+  test_assert("tas_ll_connection_tx_send success", n == 0);
 
   /* check that there is no events on the queue yet */
-  num = flextcp_context_poll(&ctx, 4, evs);
+  num = tas_context_poll(&ctx, 4, evs);
   test_assert("one rx event poll", num == 0);
 
   /* process tx bump */
@@ -334,9 +334,9 @@ static void test_full_txbuf(void *p)
   test_assert("harness_arx_push success", n == 0);
 
   /* check that there is a tx buf avail events on the queue*/
-  num = flextcp_context_poll(&ctx, 4, evs);
+  num = tas_context_poll(&ctx, 4, evs);
   test_assert("one rx event poll", num == 1);
-  test_assert("txev_type", evs[0].event_type == FLEXTCP_EV_CONN_SENDBUF);
+  test_assert("txev_type", evs[0].event_type == TAS_LL_EV_CONN_SENDBUF);
   test_assert("txev_conn", evs[0].ev.conn_sendbuf.conn == &conn);
 }
 

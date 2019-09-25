@@ -66,13 +66,13 @@ enum conn_stflags {
 
 struct socket_pending {
   struct socket *s;
-  struct flextcp_context *ctx;
+  struct tas_context *ctx;
   struct socket_pending *next;
   int fd;
 };
 
 struct socket_conn {
-  struct flextcp_connection c;
+  struct tas_ll_connection c;
   uint8_t status;
   uint8_t st_flags;
   struct socket *listener;
@@ -81,12 +81,12 @@ struct socket_conn {
   void *rx_buf_2;
   size_t rx_len_1;
   size_t rx_len_2;
-  struct flextcp_context *ctx;
+  struct tas_context *ctx;
   int move_status;
 };
 
 struct socket_listen {
-  struct flextcp_listener l;
+  struct tas_ll_listener l;
   struct socket_pending *pending;
   int backlog;
   uint8_t status;
@@ -148,11 +148,11 @@ int flextcp_fd_elookup(int fd, struct epoll **pe);
 void flextcp_fd_release(int fd);
 void flextcp_fd_close(int fd);
 
-struct flextcp_context *flextcp_sockctx_get(void);
-int flextcp_sockctx_poll(struct flextcp_context *ctx);
-int flextcp_sockctx_poll_n(struct flextcp_context *ctx, unsigned n);
+struct tas_context *flextcp_sockctx_get(void);
+int flextcp_sockctx_poll(struct tas_context *ctx);
+int flextcp_sockctx_poll_n(struct tas_context *ctx, unsigned n);
 
-void flextcp_sockclose_finish(struct flextcp_context *ctx, struct socket *s);
+void flextcp_sockclose_finish(struct tas_context *ctx, struct socket *s);
 
 void flextcp_epoll_sockinit(struct socket *s);
 void flextcp_epoll_sockclose(struct socket *s);

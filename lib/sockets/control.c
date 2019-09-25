@@ -40,7 +40,7 @@
 
 #include "internal.h"
 
-static void conn_close(struct flextcp_context *ctx, struct socket *s);
+static void conn_close(struct tas_context *ctx, struct socket *s);
 
 int tas_init(void)
 {
@@ -49,8 +49,8 @@ int tas_init(void)
     return -1;
   }
 
-  if (flextcp_init() != 0) {
-    fprintf(stderr, "flextcp_init failed\n");
+  if (tas_ll_init() != 0) {
+    fprintf(stderr, "tas_ll_init failed\n");
     return -1;
   }
 
@@ -92,7 +92,7 @@ int tas_socket(int domain, int type, int protocol)
 int tas_close(int sockfd)
 {
   struct socket *s;
-  struct flextcp_context *ctx;
+  struct tas_context *ctx;
 
   if (flextcp_fd_slookup(sockfd, &s) != 0) {
     errno = EBADF;
@@ -113,7 +113,7 @@ int tas_close(int sockfd)
   return 0;
 }
 
-static void conn_close(struct flextcp_context *ctx, struct socket *s)
+static void conn_close(struct tas_context *ctx, struct socket *s)
 {
   s->data.connection.status = SOC_CLOSED;
 
@@ -123,8 +123,8 @@ static void conn_close(struct flextcp_context *ctx, struct socket *s)
     /* rx and tx already closed */
     flextcp_sockclose_finish(ctx, s);
   } else if (!(s->data.connection.st_flags & CSTF_TXCLOSED)) {
-    if (flextcp_connection_tx_close(ctx, &s->data.connection.c) != 0) {
-      fprintf(stderr, "conn_close: flextcp_connection_tx_close failed\n");
+    if (tas_ll_connection_tx_close(ctx, &s->data.connection.c) != 0) {
+      fprintf(stderr, "conn_close: tas_ll_connection_tx_close failed\n");
       abort();
     }
 
@@ -137,12 +137,12 @@ static void conn_close(struct flextcp_context *ctx, struct socket *s)
   }
 }
 
-void flextcp_sockclose_finish(struct flextcp_context *ctx, struct socket *s)
+void flextcp_sockclose_finish(struct tas_context *ctx, struct socket *s)
 {
   /* socket struct will be freed after asynchronous completion */
 
-  if (flextcp_connection_close(ctx, &s->data.connection.c) != 0) {
-    fprintf(stderr, "close: flextcp_connection_close failed (unhandled, "
+  if (tas_ll_connection_close(ctx, &s->data.connection.c) != 0) {
+    fprintf(stderr, "close: tas_ll_connection_close failed (unhandled, "
         "results in leak)\n");
     return;
   }
@@ -152,7 +152,7 @@ void flextcp_sockclose_finish(struct flextcp_context *ctx, struct socket *s)
 int tas_shutdown(int sockfd, int how)
 {
   struct socket *s;
-  struct flextcp_context *ctx;
+  struct tas_context *ctx;
 
   if (flextcp_fd_slookup(sockfd, &s) != 0) {
     errno = EBADF;
@@ -182,7 +182,7 @@ int tas_shutdown(int sockfd, int how)
   }
 
   ctx = flextcp_sockctx_get();
-  if (flextcp_connection_tx_close(ctx, &s->data.connection.c) != 0) {
+  if (tas_ll_connection_tx_close(ctx, &s->data.connection.c) != 0) {
     /* a bit fishy.... */
     errno = ENOBUFS;
     return -1;
@@ -222,7 +222,7 @@ int tas_connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
   struct socket *s;
   int ret = 0;
   struct sockaddr_in *sin = (struct sockaddr_in *) addr;
-  struct flextcp_context *ctx;
+  struct tas_context *ctx;
 
   if (flextcp_fd_slookup(sockfd, &s) != 0) {
     errno = EBADF;
@@ -254,7 +254,7 @@ int tas_connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
 
   /* open flextcp connection */
   ctx = flextcp_sockctx_get();
-  if (flextcp_connection_open(ctx, &s->data.connection.c,
+  if (tas_ll_connection_open(ctx, &s->data.connection.c,
         ntohl(sin->sin_addr.s_addr), ntohs(sin->sin_port)))
   {
     /* TODO */
@@ -299,7 +299,7 @@ out:
 int tas_listen(int sockfd, int backlog)
 {
   struct socket *s;
-  struct flextcp_context *ctx;
+  struct tas_context *ctx;
   int ret = 0;
   uint32_t flags = 0;
 
@@ -325,7 +325,7 @@ int tas_listen(int sockfd, int backlog)
 
   /* pass on reuseport flags */
   if ((s->flags & SOF_REUSEPORT) == SOF_REUSEPORT) {
-    flags |= FLEXTCP_LISTEN_REUSEPORT;
+    flags |= TAS_LL_LISTEN_REUSEPORT;
   }
 
   /* make sure we have a reasonable backlog */
@@ -335,7 +335,7 @@ int tas_listen(int sockfd, int backlog)
 
   /* open flextcp listener */
   ctx = flextcp_sockctx_get();
-  if (flextcp_listen_open(ctx, &s->data.listener.l, ntohs(s->addr.sin_port),
+  if (tas_ll_listen_open(ctx, &s->data.listener.l, ntohs(s->addr.sin_port),
         backlog, flags))
   {
     /* TODO */
@@ -371,7 +371,7 @@ int tas_accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen,
     int flags)
 {
   struct socket *s, *ns;
-  struct flextcp_context *ctx;
+  struct tas_context *ctx;
   struct socket_pending *sp, *spp;
   int ret = 0, nonblock = 0, newfd;
 
@@ -437,7 +437,7 @@ int tas_accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen,
     sp->next = NULL;
 
     /* send accept request to kernel */
-    if (flextcp_listen_accept(ctx, &s->data.listener.l,
+    if (tas_ll_listen_accept(ctx, &s->data.listener.l,
           &ns->data.connection.c) != 0)
     {
       /* TODO */
@@ -777,7 +777,7 @@ int tas_move_conn(int sockfd)
 {
   struct socket *s;
   int ret = 0;
-  struct flextcp_context *ctx;
+  struct tas_context *ctx;
 
   if (flextcp_fd_slookup(sockfd, &s) != 0) {
     errno = EBADF;
@@ -801,7 +801,7 @@ int tas_move_conn(int sockfd)
   }
 
   s->data.connection.move_status = INT_MIN;
-  if (flextcp_connection_move(ctx, &s->data.connection.c) != 0) {
+  if (tas_ll_connection_move(ctx, &s->data.connection.c) != 0) {
     /* TODO */
     errno = EINVAL;
     ret = -1;

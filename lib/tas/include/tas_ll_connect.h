@@ -22,19 +22,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef FLEXNIC_DRIVER_H_
-#define FLEXNIC_DRIVER_H_
+#ifndef TAS_LL_CONNECT_H_
+#define TAS_LL_CONNECT_H_
 
 #include <stddef.h>
 #include <tas_fpif.h>
 
 /**
- * Connect to flexnic. Returns 0 on success, < 0 on error, > 0 if flexnic is not
+ * Connect to tas. Returns 0 on success, < 0 on error, > 0 if tas is not
  * ready yet.
  */
-int flexnic_driver_connect(struct flexnic_info **info, void **mem_start);
+int tas_ll_connect(struct flexnic_info **info, void **mem_start);
 
-/** Connect to flexnic internal memory. */
-int flexnic_driver_internal(void **int_mem_start);
+/** Connect to tas internal memory. */
+int tas_ll_connect_internal(void **int_mem_start);
 
-#endif /* ndef FLEXNIC_DRIVER_H_ */
+#endif /* ndef TAS_LL_CONNECT_H_ */

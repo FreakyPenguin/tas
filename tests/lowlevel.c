@@ -36,21 +36,21 @@ static void print_usage(void)
   fprintf(stderr, "Usage: lowlevel [IP] PORT\n");
 }
 
-static int init_connect(struct flextcp_context *ctx, uint32_t ip,
-    uint16_t port, struct flextcp_connection *conn)
+static int init_connect(struct tas_context *ctx, uint32_t ip,
+    uint16_t port, struct tas_ll_connection *conn)
 {
-  struct flextcp_event ev;
+  struct tas_ll_event ev;
   int ret;
 
-  if (flextcp_connection_open(ctx, conn, ip, port) != 0) {
-    fprintf(stderr, "flextcp_connection_open failed\n");
+  if (tas_ll_connection_open(ctx, conn, ip, port) != 0) {
+    fprintf(stderr, "tas_ll_connection_open failed\n");
     return -1;
   }
 
   /* wait for connection to open */
   while (1) {
-    if ((ret = flextcp_context_poll(ctx, 1, &ev)) < 0) {
-      fprintf(stderr, "init_connect: flextcp_context_poll failed\n");
+    if ((ret = tas_context_poll(ctx, 1, &ev)) < 0) {
+      fprintf(stderr, "init_connect: tas_context_poll failed\n");
       return -1;
     }
 
@@ -59,7 +59,7 @@ static int init_connect(struct flextcp_context *ctx, uint32_t ip,
       continue;
     }
 
-    if (ev.event_type != FLEXTCP_EV_CONN_OPEN) {
+    if (ev.event_type != TAS_LL_EV_CONN_OPEN) {
       fprintf(stderr, "init_connect: unexpected event type (%u)\n",
           ev.event_type);
       continue;
@@ -76,14 +76,14 @@ static int init_connect(struct flextcp_context *ctx, uint32_t ip,
   return 0;
 }
 
-static int init_listen(struct flextcp_context *ctx, uint16_t port,
-    struct flextcp_listener *listen, struct flextcp_connection *conn)
+static int init_listen(struct tas_context *ctx, uint16_t port,
+    struct tas_ll_listener *listen, struct tas_ll_connection *conn)
 {
-  struct flextcp_event ev;
+  struct tas_ll_event ev;
   int ret;
 
-  if (flextcp_listen_open(ctx, listen, port, 8, 0) != 0) {
-    fprintf(stderr, "init_listen: flextcp_listen_open failed\n");
+  if (tas_ll_listen_open(ctx, listen, port, 8, 0) != 0) {
+    fprintf(stderr, "init_listen: tas_ll_listen_open failed\n");
     return -1;
   }
 
@@ -91,8 +91,8 @@ static int init_listen(struct flextcp_context *ctx, uint16_t port,
 
   /* wait until listen request is done */
   while (1) {
-    if ((ret = flextcp_context_poll(ctx, 1, &ev)) < 0) {
-      fprintf(stderr, "init_listen: flextcp_context_poll failed\n");
+    if ((ret = tas_context_poll(ctx, 1, &ev)) < 0) {
+      fprintf(stderr, "init_listen: tas_context_poll failed\n");
       return -1;
     }
 
@@ -101,7 +101,7 @@ static int init_listen(struct flextcp_context *ctx, uint16_t port,
       continue;
     }
 
-    if (ev.event_type != FLEXTCP_EV_LISTEN_OPEN) {
+    if (ev.event_type != TAS_LL_EV_LISTEN_OPEN) {
       fprintf(stderr, "init_listen: unexpected event type (%u)\n",
           ev.event_type);
       continue;
@@ -116,8 +116,8 @@ static int init_listen(struct flextcp_context *ctx, uint16_t port,
   }
 
   printf("Sending accept request\n");
-  if (flextcp_listen_accept(ctx, listen, conn) != 0) {
-    fprintf(stderr, "init_listen: flextcp_listen_accept failed\n");
+  if (tas_ll_listen_accept(ctx, listen, conn) != 0) {
+    fprintf(stderr, "init_listen: tas_ll_listen_accept failed\n");
     return -1;
   }
 
@@ -126,11 +126,11 @@ static int init_listen(struct flextcp_context *ctx, uint16_t port,
 
 int main(int argc, char *argv[])
 {
-  struct flextcp_context ctx;
-  struct flextcp_connection conn;
-  struct flextcp_listener listen;
+  struct tas_context ctx;
+  struct tas_ll_connection conn;
+  struct tas_ll_listener listen;
   uint32_t ip;
-  struct flextcp_event evs[4];
+  struct tas_ll_event evs[4];
   uint16_t port;
   int num, i, connect = 0;
   size_t j, len;
@@ -153,13 +153,13 @@ int main(int argc, char *argv[])
   }
   port = atoi(argv[argc - 1]);
 
-  if (flextcp_init()) {
-    fprintf(stderr, "flextcp_init failed\n");
+  if (tas_ll_init()) {
+    fprintf(stderr, "tas_ll_init failed\n");
     return -1;
   }
 
-  if (flextcp_context_create(&ctx)) {
-    fprintf(stderr, "flextcp_context_create failed\n");
+  if (tas_context_create(&ctx)) {
+    fprintf(stderr, "tas_context_create failed\n");
     return -1;
   }
 
@@ -183,9 +183,9 @@ int main(int argc, char *argv[])
 
   while (1) {
     /* poll network events */
-    num = flextcp_context_poll(&ctx, 4, evs);
+    num = tas_context_poll(&ctx, 4, evs);
     for (i = 0; i < num; i++) {
-      if (evs[i].event_type == FLEXTCP_EV_CONN_RECEIVED) {
+      if (evs[i].event_type == TAS_LL_EV_CONN_RECEIVED) {
         len = evs[i].ev.conn_received.len;
 
         /* print received data */
@@ -194,10 +194,10 @@ int main(int argc, char *argv[])
         }
 
         /* free rx buffer */
-        if (flextcp_connection_rx_done(&ctx, &conn, len)
+        if (tas_ll_connection_rx_done(&ctx, &conn, len)
             != 0)
         {
-          fprintf(stderr, "flextcp_connection_rx_done failed\n");
+          fprintf(stderr, "tas_ll_connection_rx_done failed\n");
           return -1;
         }
 
@@ -221,17 +221,17 @@ int main(int argc, char *argv[])
     /* try to send out available input */
     if (inp_avail > 0) {
       /* allocate tx buffer for echoing */
-      res = flextcp_connection_tx_alloc(&conn, inp_avail, &txbuf);
+      res = tas_ll_connection_tx_alloc(&conn, inp_avail, &txbuf);
       if (res < 0) {
-        fprintf(stderr, "flextcp_connection_tx_alloc failed\n");
+        fprintf(stderr, "tas_ll_connection_tx_alloc failed\n");
         return -1;
       }
 
       /* copy payload into tx buffer */
       memcpy(txbuf, inp_buf + inp_off, inp_avail);
 
-      if (flextcp_connection_tx_send(&ctx, &conn, res) != 0) {
-        fprintf(stderr, "flextcp_connection_tx_send failed\n");
+      if (tas_ll_connection_tx_send(&ctx, &conn, res) != 0) {
+        fprintf(stderr, "tas_ll_connection_tx_send failed\n");
         return -1;
       }
 

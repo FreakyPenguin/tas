@@ -33,12 +33,12 @@
 #include <tas_ll.h>
 #include <tas_utils.h>
 
-int flextcp_kernel_reqscale(struct flextcp_context *ctx, uint32_t cores);
+int flextcp_kernel_reqscale(struct tas_context *ctx, uint32_t cores);
 
 int main(int argc, char *argv[])
 {
     unsigned cores;
-    struct flextcp_context ctx;
+    struct tas_context ctx;
 
     if (argc != 2) {
         fprintf(stderr, "Usage: ./scaletool CORES\n");
@@ -47,13 +47,13 @@ int main(int argc, char *argv[])
 
     cores = atoi(argv[1]);
 
-    if (flextcp_init() != 0) {
-        fprintf(stderr, "flextcp_init failed\n");
+    if (tas_ll_init() != 0) {
+        fprintf(stderr, "tas_ll_init failed\n");
         return EXIT_FAILURE;
     }
 
-    if (flextcp_context_create(&ctx) != 0) {
-        fprintf(stderr, "flextcp_context_create failed\n");
+    if (tas_context_create(&ctx) != 0) {
+        fprintf(stderr, "tas_context_create failed\n");
         return EXIT_FAILURE;
     }
 

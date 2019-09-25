@@ -234,7 +234,7 @@ out:
 int tas_epoll_wait(int epfd, struct epoll_event *events, int maxevents,
     int timeout)
 {
-  struct flextcp_context *ctx;
+  struct tas_context *ctx;
   struct epoll *ep;
   struct epoll_socket *es;
   struct socket *s;
@@ -319,7 +319,7 @@ again:
           startwait = cur_ts;
         } else if(cur_ts - startwait >= POLL_CYCLE) {
           // Idle -- wait for data from apps/flexnic
-          flextcp_block(ctx, cur_ms - mtimeout);
+          tas_ll_block(ctx, cur_ms - mtimeout);
           // Gotta check again now that we woke up
           startwait = 0;
           goto again;

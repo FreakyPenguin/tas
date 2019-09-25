@@ -155,12 +155,12 @@ int flextcp_kernel_connect(void)
   return 0;
 }
 
-int flextcp_kernel_newctx(struct flextcp_context *ctx)
+int flextcp_kernel_newctx(struct tas_context *ctx)
 {
   ssize_t sz, off, total_sz;
   struct kernel_uxsock_response *resp;
   uint8_t resp_buf[sizeof(*resp) +
-      FLEXTCP_MAX_FTCPCORES * sizeof(resp->flexnic_qs[0])];
+      TAS_MAX_FTCPCORES * sizeof(resp->flexnic_qs[0])];
   struct kernel_uxsock_request req = {
       .rxq_len = NIC_RXQ_LEN,
       .txq_len = NIC_TXQ_LEN,
@@ -206,9 +206,9 @@ int flextcp_kernel_newctx(struct flextcp_context *ctx)
     off += sz;
   }
 
-  if (resp->flexnic_qs_num > FLEXTCP_MAX_FTCPCORES) {
+  if (resp->flexnic_qs_num > TAS_MAX_FTCPCORES) {
     fprintf(stderr, "flextcp_kernel_newctx: stack only supports up to %u "
-        "queues, got %u\n", FLEXTCP_MAX_FTCPCORES, resp->flexnic_qs_num);
+        "queues, got %u\n", TAS_MAX_FTCPCORES, resp->flexnic_qs_num);
     abort();
   }
   /* receive queues in response */
@@ -258,7 +258,7 @@ int flextcp_kernel_newctx(struct flextcp_context *ctx)
   return 0;
 }
 
-int flextcp_kernel_reqscale(struct flextcp_context *ctx, uint32_t cores)
+int flextcp_kernel_reqscale(struct tas_context *ctx, uint32_t cores)
 {
   uint32_t pos = ctx->kin_head;
   struct kernel_appout *kin = ctx->kin_base;

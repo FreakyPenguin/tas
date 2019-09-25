@@ -38,13 +38,13 @@ static int connect_flexnic(void)
   struct flexnic_info *info;
   void *mem_start, *int_mem_start;
 
-  if (flexnic_driver_connect(&info, &mem_start) != 0) {
-    fprintf(stderr, "flexnic_driver_connect failed\n");
+  if (tas_ll_connect(&info, &mem_start) != 0) {
+    fprintf(stderr, "tas_ll_connect failed\n");
     return -1;
   }
 
-  if (flexnic_driver_internal(&int_mem_start) != 0) {
-    fprintf(stderr, "flexnic_driver_internal failed\n");
+  if (tas_ll_connect_internal(&int_mem_start) != 0) {
+    fprintf(stderr, "tas_ll_connect_internal failed\n");
     return -1;
   }
   plm = int_mem_start;

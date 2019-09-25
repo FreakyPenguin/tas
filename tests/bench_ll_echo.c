@@ -48,15 +48,15 @@ static uint16_t max_events = 64;
 static uint16_t listen_port;
 
 struct connection {
-    struct flextcp_connection conn;
+    struct tas_ll_connection conn;
     struct connection *next;
     uint32_t to_alloc;
     uint32_t to_send;
 };
 
 struct core {
-    struct flextcp_context context;
-    struct flextcp_listener listen;
+    struct tas_context context;
+    struct tas_ll_listener listen;
     struct connection *conns;
     int cn;
 #ifdef PRINT_STATS
@@ -102,10 +102,10 @@ static void prepare_core(struct core *c)
 #endif
 
     /* prepare listener */
-    if (flextcp_listen_open(&c->context, &c->listen, listen_port, max_flows,
-                FLEXTCP_LISTEN_REUSEPORT) != 0)
+    if (tas_ll_listen_open(&c->context, &c->listen, listen_port, max_flows,
+                TAS_LL_LISTEN_REUSEPORT) != 0)
     {
-        fprintf(stderr, "[%d] flextcp_listen_open failed\n", cn);
+        fprintf(stderr, "[%d] tas_ll_listen_open failed\n", cn);
         abort();
     }
 
@@ -134,20 +134,20 @@ static inline void accept_connection(struct core *co)
         return;
     }
 
-    if (flextcp_listen_accept(&co->context, &co->listen, &c->conn) != 0) {
-        fprintf(stderr, "[%d] flextcp_listen_accept failed\n", co->cn);
+    if (tas_ll_listen_accept(&co->context, &co->listen, &c->conn) != 0) {
+        fprintf(stderr, "[%d] tas_ll_listen_accept failed\n", co->cn);
         return;
     }
     co->conns = c->next;
 }
 
 static inline void accepted_connection(struct core *co,
-        struct flextcp_event *ev)
+        struct tas_ll_event *ev)
 {
     struct connection *c = (struct connection *) ev->ev.listen_accept.conn;
 
     if (ev->ev.listen_accept.status != 0) {
-        fprintf(stderr, "[%d] flextcp_listen_accept async failure\n", co->cn);
+        fprintf(stderr, "[%d] tas_ll_listen_accept async failure\n", co->cn);
         c->next = co->conns;
         co->conns = c;
         return;
@@ -165,7 +165,7 @@ static inline int conn_send(struct core *co, struct connection *c)
 
     while (allocd < c->to_alloc) {
         STATS_ADD(co, tx_acalls, 1);
-        ret = flextcp_connection_tx_alloc(&c->conn, c->to_alloc - allocd, &buf);
+        ret = tas_ll_connection_tx_alloc(&c->conn, c->to_alloc - allocd, &buf);
         if (ret <= 0) {
             break;
         }
@@ -175,7 +175,7 @@ static inline int conn_send(struct core *co, struct connection *c)
     c->to_send  += allocd;
 
     if (allocd > 0) {
-        flextcp_connection_rx_done(&co->context, &c->conn, allocd);
+        tas_ll_connection_rx_done(&co->context, &c->conn, allocd);
     }
     if (c->to_alloc > 0) {
         STATS_ADD(co, tx_afail, 1);
@@ -183,7 +183,7 @@ static inline int conn_send(struct core *co, struct connection *c)
 
     if (c->to_send > 0) {
         STATS_ADD(co, tx_scalls, 1);
-        ret = flextcp_connection_tx_send(&co->context, &c->conn, c->to_send);
+        ret = tas_ll_connection_tx_send(&co->context, &c->conn, c->to_send);
         if (ret != 0) {
             STATS_ADD(co, tx_sfail, 1);
             return 1;
@@ -199,7 +199,7 @@ static void *thread_run(void *arg)
 {
     struct core *co = arg;
     int n, i, cn;
-    struct flextcp_event *evs, *ev;
+    struct tas_ll_event *evs, *ev;
     struct connection *c;
 
     cn = co->cn;
@@ -214,8 +214,8 @@ static void *thread_run(void *arg)
     printf("[%d] Starting event loop\n", cn);
     fflush(stdout);
     while (1) {
-        if ((n = flextcp_context_poll(&co->context, max_events, evs)) < 0) {
-            printf("[%d] flextcp_context_poll failed\n", cn);
+        if ((n = tas_context_poll(&co->context, max_events, evs)) < 0) {
+            printf("[%d] tas_context_poll failed\n", cn);
             abort();
         }
 #ifdef PRINT_STATS
@@ -226,21 +226,21 @@ static void *thread_run(void *arg)
             ev = evs + i;
 
             switch (ev->event_type) {
-                case FLEXTCP_EV_LISTEN_OPEN:
+                case TAS_LL_EV_LISTEN_OPEN:
                     /* listener is ready now, nothing to do */
                     break;
 
-                case FLEXTCP_EV_LISTEN_NEWCONN:
+                case TAS_LL_EV_LISTEN_NEWCONN:
                     /* new connection arrived, need to accept */
                     accept_connection(co);
                     break;
 
-                case FLEXTCP_EV_LISTEN_ACCEPT:
+                case TAS_LL_EV_LISTEN_ACCEPT:
                     /* accept succeeded */
                     accepted_connection(co, ev);
                     break;
 
-                case FLEXTCP_EV_CONN_RECEIVED:
+                case TAS_LL_EV_CONN_RECEIVED:
                     /* received data on connection */
                     c = (struct connection *) ev->ev.conn_received.conn;
                     c->to_alloc += ev->ev.conn_received.len;
@@ -249,7 +249,7 @@ static void *thread_run(void *arg)
                     STATS_ADD(co, rx_bytes, ev->ev.conn_received.len);
                     break;
 
-                case FLEXTCP_EV_CONN_SENDBUF:
+                case TAS_LL_EV_CONN_SENDBUF:
                     /* send buffer on connection opened up from 0 */
                     c = (struct connection *) ev->ev.conn_sendbuf.conn;
                     conn_send(co, c);
@@ -290,8 +290,8 @@ int main(int argc, char *argv[])
         max_bytes = atoi(argv[4]);
     }
 
-    if (flextcp_init() != 0) {
-        fprintf(stderr, "flextcp_init failed\n");
+    if (tas_ll_init() != 0) {
+        fprintf(stderr, "tas_ll_init failed\n");
         return EXIT_FAILURE;
     }
 
@@ -304,8 +304,8 @@ int main(int argc, char *argv[])
 
     for (i = 0; i < num_threads; i++) {
         cs->cn = i;
-        if (flextcp_context_create(&cs->context) != 0) {
-            fprintf(stderr, "flextcp_context_create failed %d\n", i);
+        if (tas_context_create(&cs->context) != 0) {
+            fprintf(stderr, "tas_context_create failed %d\n", i);
             return EXIT_FAILURE;
         }
         if (pthread_create(pts + i, NULL, thread_run, cs + i)) {

@@ -46,18 +46,18 @@ enum conn_state {
 };
 
 extern void *flexnic_mem;
-extern int flexnic_evfd[FLEXTCP_MAX_FTCPCORES];
+extern int flexnic_evfd[TAS_MAX_FTCPCORES];
 
 int flextcp_kernel_connect(void);
-int flextcp_kernel_newctx(struct flextcp_context *ctx);
+int flextcp_kernel_newctx(struct tas_context *ctx);
 void flextcp_kernel_kick(void);
 
-int flextcp_context_tx_alloc(struct flextcp_context *ctx,
+int tas_context_tx_alloc(struct tas_context *ctx,
     struct flextcp_pl_atx **atx, uint16_t core);
-void flextcp_context_tx_done(struct flextcp_context *ctx, uint16_t core);
+void tas_context_tx_done(struct tas_context *ctx, uint16_t core);
 
-uint32_t flextcp_conn_txbuf_available(struct flextcp_connection *conn);
-int flextcp_conn_pushtxeos(struct flextcp_context *ctx,
-        struct flextcp_connection *conn);
+uint32_t flextcp_conn_txbuf_available(struct tas_ll_connection *conn);
+int flextcp_conn_pushtxeos(struct tas_context *ctx,
+        struct tas_ll_connection *conn);
 
 #endif /* ndef INTERNAL_H_ */

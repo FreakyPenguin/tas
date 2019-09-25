@@ -40,7 +40,7 @@
 ssize_t tas_recvmsg(int sockfd, struct msghdr *msg, int flags)
 {
   struct socket *s;
-  struct flextcp_context *ctx;
+  struct tas_context *ctx;
   ssize_t ret = 0;
   size_t len, i, off;
   struct iovec *iov;
@@ -120,7 +120,7 @@ ssize_t tas_recvmsg(int sockfd, struct msghdr *msg, int flags)
     {
       flextcp_epoll_clear(s, EPOLLIN);
     }
-    flextcp_connection_rx_done(ctx, &s->data.connection.c, ret);
+    tas_ll_connection_rx_done(ctx, &s->data.connection.c, ret);
   }
 out:
   flextcp_fd_release(sockfd);
@@ -130,7 +130,7 @@ out:
 static inline ssize_t recv_simple(int sockfd, void *buf, size_t len, int flags)
 {
   struct socket *s;
-  struct flextcp_context *ctx;
+  struct tas_context *ctx;
   ssize_t ret = 0;
   size_t off, len_2;
 
@@ -196,7 +196,7 @@ static inline ssize_t recv_simple(int sockfd, void *buf, size_t len, int flags)
     {
       flextcp_epoll_clear(s, EPOLLIN);
     }
-    flextcp_connection_rx_done(ctx, &s->data.connection.c, ret);
+    tas_ll_connection_rx_done(ctx, &s->data.connection.c, ret);
   }
 out:
   flextcp_fd_release(sockfd);
@@ -209,7 +209,7 @@ ssize_t tas_sendmsg(int sockfd, const struct msghdr *msg, int flags)
 {
 
   struct socket *s;
-  struct flextcp_context *ctx;
+  struct tas_context *ctx;
   ssize_t ret = 0;
   size_t len, i, l, len_1, len_2, off;
   struct iovec *iov;
@@ -245,7 +245,7 @@ ssize_t tas_sendmsg(int sockfd, const struct msghdr *msg, int flags)
   /* make sure there is space in the transmit queue if the socket is
    * non-blocking */
   if ((s->flags & SOF_NONBLOCK) == SOF_NONBLOCK &&
-      flextcp_connection_tx_possible(ctx, &s->data.connection.c) != 0)
+      tas_ll_connection_tx_possible(ctx, &s->data.connection.c) != 0)
   {
     errno = EAGAIN;
     ret = -1;
@@ -253,10 +253,10 @@ ssize_t tas_sendmsg(int sockfd, const struct msghdr *msg, int flags)
   }
 
   /* allocate transmit buffer */
-  ret = flextcp_connection_tx_alloc2(&s->data.connection.c, len, &dst_1, &len_1,
+  ret = tas_ll_connection_tx_alloc2(&s->data.connection.c, len, &dst_1, &len_1,
       &dst_2);
   if (ret < 0) {
-    fprintf(stderr, "sendmsg: flextcp_connection_tx_alloc failed\n");
+    fprintf(stderr, "sendmsg: tas_ll_connection_tx_alloc failed\n");
     abort();
   }
 
@@ -269,10 +269,10 @@ ssize_t tas_sendmsg(int sockfd, const struct msghdr *msg, int flags)
       do {
         flextcp_sockctx_poll(ctx);
 
-        ret = flextcp_connection_tx_alloc2(&s->data.connection.c, len, &dst_1,
+        ret = tas_ll_connection_tx_alloc2(&s->data.connection.c, len, &dst_1,
             &len_1, &dst_2);
         if (ret < 0) {
-          fprintf(stderr, "sendmsg: flextcp_connection_tx_alloc failed\n");
+          fprintf(stderr, "sendmsg: tas_ll_connection_tx_alloc failed\n");
           abort();
         }
       } while (ret == 0);
@@ -294,7 +294,7 @@ ssize_t tas_sendmsg(int sockfd, const struct msghdr *msg, int flags)
 
   /* send out */
   /* TODO: this should not block for non-blocking sockets */
-  while (flextcp_connection_tx_send(ctx, &s->data.connection.c, ret) != 0) {
+  while (tas_ll_connection_tx_send(ctx, &s->data.connection.c, ret) != 0) {
     flextcp_sockctx_poll(ctx);
   }
 
@@ -307,7 +307,7 @@ static inline ssize_t send_simple(int sockfd, const void *buf, size_t len,
     int flags)
 {
   struct socket *s;
-  struct flextcp_context *ctx;
+  struct tas_context *ctx;
   ssize_t ret = 0;
   size_t len_1, len_2;
   void *dst_1, *dst_2;
@@ -337,7 +337,7 @@ static inline ssize_t send_simple(int sockfd, const void *buf, size_t len,
   /* make sure there is space in the transmit queue if the socket is
    * non-blocking */
   if ((s->flags & SOF_NONBLOCK) == SOF_NONBLOCK &&
-      flextcp_connection_tx_possible(ctx, &s->data.connection.c) != 0)
+      tas_ll_connection_tx_possible(ctx, &s->data.connection.c) != 0)
   {
     errno = EAGAIN;
     ret = -1;
@@ -345,10 +345,10 @@ static inline ssize_t send_simple(int sockfd, const void *buf, size_t len,
   }
 
   /* allocate transmit buffer */
-  ret = flextcp_connection_tx_alloc2(&s->data.connection.c, len, &dst_1, &len_1,
+  ret = tas_ll_connection_tx_alloc2(&s->data.connection.c, len, &dst_1, &len_1,
       &dst_2);
   if (ret < 0) {
-    fprintf(stderr, "sendmsg: flextcp_connection_tx_alloc failed\n");
+    fprintf(stderr, "sendmsg: tas_ll_connection_tx_alloc failed\n");
     abort();
   }
 
@@ -361,10 +361,10 @@ static inline ssize_t send_simple(int sockfd, const void *buf, size_t len,
       do {
         flextcp_sockctx_poll(ctx);
 
-        ret = flextcp_connection_tx_alloc2(&s->data.connection.c, len, &dst_1,
+        ret = tas_ll_connection_tx_alloc2(&s->data.connection.c, len, &dst_1,
             &len_1, &dst_2);
         if (ret < 0) {
-          fprintf(stderr, "sendmsg: flextcp_connection_tx_alloc failed\n");
+          fprintf(stderr, "sendmsg: tas_ll_connection_tx_alloc failed\n");
           abort();
         }
       } while (ret == 0);
@@ -378,7 +378,7 @@ static inline ssize_t send_simple(int sockfd, const void *buf, size_t len,
 
   /* send out */
   /* TODO: this should not block for non-blocking sockets */
-  while (flextcp_connection_tx_send(ctx, &s->data.connection.c, ret) != 0) {
+  while (tas_ll_connection_tx_send(ctx, &s->data.connection.c, ret) != 0) {
     flextcp_sockctx_poll(ctx);
   }
 

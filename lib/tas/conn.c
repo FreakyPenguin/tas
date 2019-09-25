@@ -31,15 +31,15 @@
 #include <tas_spif.h>
 #include "internal.h"
 
-static void connection_init(struct flextcp_connection *conn);
+static void connection_init(struct tas_ll_connection *conn);
 
-static inline void conn_mark_bump(struct flextcp_context *ctx,
-    struct flextcp_connection *conn);
-static inline uint32_t conn_tx_allocbytes(struct flextcp_connection *conn);
-static inline uint32_t conn_tx_sendbytes(struct flextcp_connection *conn);
+static inline void conn_mark_bump(struct tas_context *ctx,
+    struct tas_ll_connection *conn);
+static inline uint32_t conn_tx_allocbytes(struct tas_ll_connection *conn);
+static inline uint32_t conn_tx_sendbytes(struct tas_ll_connection *conn);
 
-int flextcp_listen_open(struct flextcp_context *ctx,
-    struct flextcp_listener *lst, uint16_t port, uint32_t backlog,
+int tas_ll_listen_open(struct tas_context *ctx,
+    struct tas_ll_listener *lst, uint16_t port, uint32_t backlog,
     uint32_t flags)
 {
   uint32_t pos = ctx->kin_head;
@@ -48,19 +48,19 @@ int flextcp_listen_open(struct flextcp_context *ctx,
 
   memset(lst, 0, sizeof(*lst));
 
-  if ((flags & ~(FLEXTCP_LISTEN_REUSEPORT)) != 0) {
-    fprintf(stderr, "flextcp_listen_open: unknown flags (%x)\n", flags);
+  if ((flags & ~(TAS_LL_LISTEN_REUSEPORT)) != 0) {
+    fprintf(stderr, "tas_ll_listen_open: unknown flags (%x)\n", flags);
     return -1;
   }
 
-  if ((flags & FLEXTCP_LISTEN_REUSEPORT) == FLEXTCP_LISTEN_REUSEPORT) {
+  if ((flags & TAS_LL_LISTEN_REUSEPORT) == TAS_LL_LISTEN_REUSEPORT) {
     f |= KERNEL_APPOUT_LISTEN_REUSEPORT;
   }
 
   kin += pos;
 
   if (kin->type != KERNEL_APPOUT_INVALID) {
-    fprintf(stderr, "flextcp_listen_open: no queue space\n");
+    fprintf(stderr, "tas_ll_listen_open: no queue space\n");
     return -1;
   }
 
@@ -86,8 +86,8 @@ int flextcp_listen_open(struct flextcp_context *ctx,
 
 }
 
-int flextcp_listen_accept(struct flextcp_context *ctx,
-    struct flextcp_listener *lst, struct flextcp_connection *conn)
+int tas_ll_listen_accept(struct tas_context *ctx,
+    struct tas_ll_listener *lst, struct tas_ll_connection *conn)
 {
   uint32_t pos = ctx->kin_head;
   struct kernel_appout *kin = ctx->kin_base;
@@ -97,7 +97,7 @@ int flextcp_listen_accept(struct flextcp_context *ctx,
   kin += pos;
 
   if (kin->type != KERNEL_APPOUT_INVALID) {
-    fprintf(stderr, "flextcp_listen_accept: no queue space\n");
+    fprintf(stderr, "tas_ll_listen_accept: no queue space\n");
     return -1;
   }
 
@@ -120,8 +120,8 @@ int flextcp_listen_accept(struct flextcp_context *ctx,
   return 0;
 }
 
-int flextcp_connection_open(struct flextcp_context *ctx,
-    struct flextcp_connection *conn, uint32_t dst_ip, uint16_t dst_port)
+int tas_ll_connection_open(struct tas_context *ctx,
+    struct tas_ll_connection *conn, uint32_t dst_ip, uint16_t dst_port)
 {
   uint32_t pos = ctx->kin_head, f = 0;
   struct kernel_appout *kin = ctx->kin_base;
@@ -131,7 +131,7 @@ int flextcp_connection_open(struct flextcp_context *ctx,
   kin += pos;
 
   if (kin->type != KERNEL_APPOUT_INVALID) {
-    fprintf(stderr, "flextcp_connection_open: no queue space\n");
+    fprintf(stderr, "tas_ll_connection_open: no queue space\n");
     return -1;
   }
 
@@ -158,12 +158,12 @@ int flextcp_connection_open(struct flextcp_context *ctx,
 
 }
 
-int flextcp_connection_close(struct flextcp_context *ctx,
-    struct flextcp_connection *conn)
+int tas_ll_connection_close(struct tas_context *ctx,
+    struct tas_ll_connection *conn)
 {
   uint32_t pos = ctx->kin_head, f = 0;
   struct kernel_appout *kin = ctx->kin_base;
-  struct flextcp_connection *p_c;
+  struct tas_ll_connection *p_c;
 
   /* need to remove connection from bump queue */
   if (conn->bump_pending != 0) {
@@ -220,8 +220,8 @@ int flextcp_connection_close(struct flextcp_context *ctx,
   return 0;
 }
 
-int flextcp_connection_rx_done(struct flextcp_context *ctx,
-    struct flextcp_connection *conn, size_t len)
+int tas_ll_connection_rx_done(struct tas_context *ctx,
+    struct tas_ll_connection *conn, size_t len)
 {
   if (conn->rxb_used < len) {
     return -1;
@@ -239,7 +239,7 @@ int flextcp_connection_rx_done(struct flextcp_context *ctx,
   return 0;
 }
 
-ssize_t flextcp_connection_tx_alloc(struct flextcp_connection *conn, size_t len,
+ssize_t tas_ll_connection_tx_alloc(struct tas_ll_connection *conn, size_t len,
     void **buf)
 {
   uint32_t avail;
@@ -274,7 +274,7 @@ ssize_t flextcp_connection_tx_alloc(struct flextcp_connection *conn, size_t len,
   return len;
 }
 
-ssize_t flextcp_connection_tx_alloc2(struct flextcp_connection *conn, size_t len,
+ssize_t tas_ll_connection_tx_alloc2(struct tas_ll_connection *conn, size_t len,
     void **buf_1, size_t *len_1, void **buf_2)
 {
   uint32_t avail, head;
@@ -311,8 +311,8 @@ ssize_t flextcp_connection_tx_alloc2(struct flextcp_connection *conn, size_t len
   return len;
 }
 
-int flextcp_connection_tx_send(struct flextcp_context *ctx,
-    struct flextcp_connection *conn, size_t len)
+int tas_ll_connection_tx_send(struct tas_context *ctx,
+    struct tas_ll_connection *conn, size_t len)
 {
   uint32_t next_head;
 
@@ -334,18 +334,18 @@ int flextcp_connection_tx_send(struct flextcp_context *ctx,
   return 0;
 }
 
-int flextcp_connection_tx_close(struct flextcp_context *ctx,
-        struct flextcp_connection *conn)
+int tas_ll_connection_tx_close(struct tas_context *ctx,
+        struct tas_ll_connection *conn)
 {
   /* if app hasn't sent all data yet, abort */
   if (conn_tx_sendbytes(conn) > 0) {
-    fprintf(stderr, "flextcp_connection_tx_close: has unsent data\n");
+    fprintf(stderr, "tas_ll_connection_tx_close: has unsent data\n");
     return -1;
   }
 
   /* if already closed, abort too */
   if ((conn->flags & CONN_FLAG_TXEOS) == CONN_FLAG_TXEOS) {
-    fprintf(stderr, "flextcp_connection_tx_close: already closed\n");
+    fprintf(stderr, "tas_ll_connection_tx_close: already closed\n");
     return -1;
   }
 
@@ -357,8 +357,8 @@ int flextcp_connection_tx_close(struct flextcp_context *ctx,
   return 0;
 }
 
-int flextcp_conn_pushtxeos(struct flextcp_context *ctx,
-        struct flextcp_connection *conn)
+int flextcp_conn_pushtxeos(struct tas_context *ctx,
+        struct tas_ll_connection *conn)
 {
   uint32_t head;
   assert(conn_tx_sendbytes(conn) == 0);
@@ -383,19 +383,19 @@ int flextcp_conn_pushtxeos(struct flextcp_context *ctx,
   return 0;
 }
 
-int flextcp_connection_tx_possible(struct flextcp_context *ctx,
-    struct flextcp_connection *conn)
+int tas_ll_connection_tx_possible(struct tas_context *ctx,
+    struct tas_ll_connection *conn)
 {
   return 0;
 }
 
-uint32_t flextcp_conn_txbuf_available(struct flextcp_connection *conn)
+uint32_t flextcp_conn_txbuf_available(struct tas_ll_connection *conn)
 {
   return conn_tx_allocbytes(conn);
 }
 
-int flextcp_connection_move(struct flextcp_context *ctx,
-        struct flextcp_connection *conn)
+int tas_ll_connection_move(struct tas_context *ctx,
+        struct tas_ll_connection *conn)
 {
   uint32_t pos = ctx->kin_head;
   struct kernel_appout *kin = ctx->kin_base;
@@ -403,7 +403,7 @@ int flextcp_connection_move(struct flextcp_context *ctx,
   kin += pos;
 
   if (kin->type != KERNEL_APPOUT_INVALID) {
-    fprintf(stderr, "flextcp_connection_move: no queue space\n");
+    fprintf(stderr, "tas_ll_connection_move: no queue space\n");
     return -1;
   }
 
@@ -426,16 +426,16 @@ int flextcp_connection_move(struct flextcp_context *ctx,
   return 0;
 }
 
-static void connection_init(struct flextcp_connection *conn)
+static void connection_init(struct tas_ll_connection *conn)
 {
   memset(conn, 0, sizeof(*conn));
   conn->status = CONN_CLOSED;
 }
 
-static inline void conn_mark_bump(struct flextcp_context *ctx,
-    struct flextcp_connection *conn)
+static inline void conn_mark_bump(struct tas_context *ctx,
+    struct tas_ll_connection *conn)
 {
-  struct flextcp_connection *c_prev;
+  struct tas_ll_connection *c_prev;
 
   if (conn->bump_pending) {
     return;
@@ -455,13 +455,13 @@ static inline void conn_mark_bump(struct flextcp_context *ctx,
 }
 
 /** Number of bytes in send buffer that can be allocated */
-static inline uint32_t conn_tx_allocbytes(struct flextcp_connection *conn)
+static inline uint32_t conn_tx_allocbytes(struct tas_ll_connection *conn)
 {
   return conn->txb_len - conn->txb_sent - conn->txb_allocated;
 }
 
 /** Number of bytes that have been allocated but not sent */
-static inline uint32_t conn_tx_sendbytes(struct flextcp_connection *conn)
+static inline uint32_t conn_tx_sendbytes(struct tas_ll_connection *conn)
 {
   return conn->txb_allocated;
 }

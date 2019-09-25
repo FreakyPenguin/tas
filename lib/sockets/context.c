@@ -36,33 +36,33 @@
 #include "internal.h"
 #include "../tas/internal.h"
 
-static inline void ev_listen_open(struct flextcp_context *ctx,
-    struct flextcp_event *ev);
-static inline void ev_listen_newconn(struct flextcp_context *ctx,
-    struct flextcp_event *ev);
-static inline void ev_listen_accept(struct flextcp_context *ctx,
-    struct flextcp_event *ev);
-static inline void ev_conn_open(struct flextcp_context *ctx,
-    struct flextcp_event *ev);
-static inline void ev_conn_received(struct flextcp_context *ctx,
-    struct flextcp_event *ev);
-static inline void ev_conn_sendbuf(struct flextcp_context *ctx,
-    struct flextcp_event *ev);
-static inline void ev_conn_moved(struct flextcp_context *ctx,
-    struct flextcp_event *ev);
-static inline void ev_conn_rxclosed(struct flextcp_context *ctx,
-    struct flextcp_event *ev);
-static inline void ev_conn_txclosed(struct flextcp_context *ctx,
-    struct flextcp_event *ev);
-static inline void ev_conn_closed(struct flextcp_context *ctx,
-    struct flextcp_event *ev);
+static inline void ev_listen_open(struct tas_context *ctx,
+    struct tas_ll_event *ev);
+static inline void ev_listen_newconn(struct tas_context *ctx,
+    struct tas_ll_event *ev);
+static inline void ev_listen_accept(struct tas_context *ctx,
+    struct tas_ll_event *ev);
+static inline void ev_conn_open(struct tas_context *ctx,
+    struct tas_ll_event *ev);
+static inline void ev_conn_received(struct tas_context *ctx,
+    struct tas_ll_event *ev);
+static inline void ev_conn_sendbuf(struct tas_context *ctx,
+    struct tas_ll_event *ev);
+static inline void ev_conn_moved(struct tas_context *ctx,
+    struct tas_ll_event *ev);
+static inline void ev_conn_rxclosed(struct tas_context *ctx,
+    struct tas_ll_event *ev);
+static inline void ev_conn_txclosed(struct tas_context *ctx,
+    struct tas_ll_event *ev);
+static inline void ev_conn_closed(struct tas_context *ctx,
+    struct tas_ll_event *ev);
 
-static __thread struct flextcp_context *local_context;
+static __thread struct tas_context *local_context;
 static pthread_mutex_t context_init_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-struct flextcp_context *flextcp_sockctx_get(void)
+struct tas_context *flextcp_sockctx_get(void)
 {
-  struct flextcp_context *ctx = local_context;
+  struct tas_context *ctx = local_context;
   int ret;
 
   if (ctx == NULL) {
@@ -72,10 +72,10 @@ struct flextcp_context *flextcp_sockctx_get(void)
     }
 
     pthread_mutex_lock(&context_init_mutex);
-    ret = flextcp_context_create(ctx);
+    ret = tas_context_create(ctx);
     pthread_mutex_unlock(&context_init_mutex);
     if (ret != 0) {
-      fprintf(stderr, "flextcp socket flextcp_sockctx_get: flextcp_context_create "
+      fprintf(stderr, "flextcp socket flextcp_sockctx_get: tas_context_create "
           "failed\n");
       abort();
     }
@@ -86,55 +86,55 @@ struct flextcp_context *flextcp_sockctx_get(void)
   return ctx;
 }
 
-int flextcp_sockctx_poll(struct flextcp_context *ctx)
+int flextcp_sockctx_poll(struct tas_context *ctx)
 {
-  struct flextcp_event evs[16];
+  struct tas_ll_event evs[16];
   int i, num;
 
-  if ((num = flextcp_context_poll(ctx, sizeof(evs) / sizeof(evs[0]), evs)) < 0) {
-    fprintf(stderr, "sockets poll_ctx: flextcp_context_poll failed\n");
+  if ((num = tas_context_poll(ctx, sizeof(evs) / sizeof(evs[0]), evs)) < 0) {
+    fprintf(stderr, "sockets poll_ctx: tas_context_poll failed\n");
     abort();
   }
 
   for (i = 0; i < num; i++) {
     switch (evs[i].event_type) {
-      case FLEXTCP_EV_LISTEN_OPEN:
+      case TAS_LL_EV_LISTEN_OPEN:
         ev_listen_open(ctx, &evs[i]);
         break;
 
-      case FLEXTCP_EV_LISTEN_NEWCONN:
+      case TAS_LL_EV_LISTEN_NEWCONN:
         ev_listen_newconn(ctx, &evs[i]);
         break;
 
-      case FLEXTCP_EV_LISTEN_ACCEPT:
+      case TAS_LL_EV_LISTEN_ACCEPT:
         ev_listen_accept(ctx, &evs[i]);
         break;
 
-      case FLEXTCP_EV_CONN_OPEN:
+      case TAS_LL_EV_CONN_OPEN:
         ev_conn_open(ctx, &evs[i]);
         break;
 
-      case FLEXTCP_EV_CONN_RECEIVED:
+      case TAS_LL_EV_CONN_RECEIVED:
         ev_conn_received(ctx, &evs[i]);
         break;
 
-      case FLEXTCP_EV_CONN_SENDBUF:
+      case TAS_LL_EV_CONN_SENDBUF:
         ev_conn_sendbuf(ctx, &evs[i]);
         break;
 
-      case FLEXTCP_EV_CONN_MOVED:
+      case TAS_LL_EV_CONN_MOVED:
         ev_conn_moved(ctx, &evs[i]);
         break;
 
-      case FLEXTCP_EV_CONN_RXCLOSED:
+      case TAS_LL_EV_CONN_RXCLOSED:
         ev_conn_rxclosed(ctx, &evs[i]);
         break;
 
-      case FLEXTCP_EV_CONN_TXCLOSED:
+      case TAS_LL_EV_CONN_TXCLOSED:
         ev_conn_txclosed(ctx, &evs[i]);
         break;
 
-      case FLEXTCP_EV_CONN_CLOSED:
+      case TAS_LL_EV_CONN_CLOSED:
         ev_conn_closed(ctx, &evs[i]);
         break;
 
@@ -148,7 +148,7 @@ int flextcp_sockctx_poll(struct flextcp_context *ctx)
   return num;
 }
 
-int flextcp_sockctx_poll_n(struct flextcp_context *ctx, unsigned n)
+int flextcp_sockctx_poll_n(struct tas_context *ctx, unsigned n)
 {
   int nevents = 0;
 
@@ -160,10 +160,10 @@ int flextcp_sockctx_poll_n(struct flextcp_context *ctx, unsigned n)
   return nevents;
 }
 
-static inline void ev_listen_open(struct flextcp_context *ctx,
-    struct flextcp_event *ev)
+static inline void ev_listen_open(struct tas_context *ctx,
+    struct tas_ll_event *ev)
 {
-  struct flextcp_listener *l;
+  struct tas_ll_listener *l;
   struct socket *s;
 
   l = ev->ev.listen_open.listener;
@@ -179,10 +179,10 @@ static inline void ev_listen_open(struct flextcp_context *ctx,
   }
 }
 
-static inline void ev_listen_newconn(struct flextcp_context *ctx,
-    struct flextcp_event *ev)
+static inline void ev_listen_newconn(struct tas_context *ctx,
+    struct tas_ll_event *ev)
 {
-  struct flextcp_listener *l;
+  struct tas_ll_listener *l;
   struct socket *s;
 
   l = ev->ev.listen_newconn.listener;
@@ -194,10 +194,10 @@ static inline void ev_listen_newconn(struct flextcp_context *ctx,
   flextcp_epoll_set(s, EPOLLIN);
 }
 
-static inline void ev_listen_accept(struct flextcp_context *ctx,
-    struct flextcp_event *ev)
+static inline void ev_listen_accept(struct tas_context *ctx,
+    struct tas_ll_event *ev)
 {
-  struct flextcp_connection *c;
+  struct tas_ll_connection *c;
   struct socket *s, *sl;
 
   c = ev->ev.listen_accept.conn;
@@ -221,10 +221,10 @@ static inline void ev_listen_accept(struct flextcp_context *ctx,
 
 }
 
-static inline void ev_conn_open(struct flextcp_context *ctx,
-    struct flextcp_event *ev)
+static inline void ev_conn_open(struct tas_context *ctx,
+    struct tas_ll_event *ev)
 {
-  struct flextcp_connection *c;
+  struct tas_ll_connection *c;
   struct socket *s;
 
   c = ev->ev.conn_open.conn;
@@ -244,10 +244,10 @@ static inline void ev_conn_open(struct flextcp_context *ctx,
 
 }
 
-static inline void ev_conn_received(struct flextcp_context *ctx,
-    struct flextcp_event *ev)
+static inline void ev_conn_received(struct tas_context *ctx,
+    struct tas_ll_event *ev)
 {
-  struct flextcp_connection *c;
+  struct tas_ll_connection *c;
   struct socket *s;
   void *buf;
   size_t len;
@@ -331,10 +331,10 @@ static inline void ev_conn_received(struct flextcp_context *ctx,
   flextcp_epoll_set(s, EPOLLIN);
 }
 
-static inline void ev_conn_sendbuf(struct flextcp_context *ctx,
-    struct flextcp_event *ev)
+static inline void ev_conn_sendbuf(struct tas_context *ctx,
+    struct tas_ll_event *ev)
 {
-  struct flextcp_connection *c;
+  struct tas_ll_connection *c;
   struct socket *s;
 
   c = ev->ev.conn_sendbuf.conn;
@@ -347,10 +347,10 @@ static inline void ev_conn_sendbuf(struct flextcp_context *ctx,
   flextcp_epoll_set(s, EPOLLOUT);
 }
 
-static inline void ev_conn_moved(struct flextcp_context *ctx,
-    struct flextcp_event *ev)
+static inline void ev_conn_moved(struct tas_context *ctx,
+    struct tas_ll_event *ev)
 {
-  struct flextcp_connection *c;
+  struct tas_ll_connection *c;
   struct socket *s;
 
   c = ev->ev.conn_moved.conn;
@@ -363,10 +363,10 @@ static inline void ev_conn_moved(struct flextcp_context *ctx,
   s->data.connection.move_status = ev->ev.conn_moved.status;
 }
 
-static inline void ev_conn_rxclosed(struct flextcp_context *ctx,
-    struct flextcp_event *ev)
+static inline void ev_conn_rxclosed(struct tas_context *ctx,
+    struct tas_ll_event *ev)
 {
-  struct flextcp_connection *c;
+  struct tas_ll_connection *c;
   struct socket *s;
 
   c = ev->ev.conn_rxclosed.conn;
@@ -389,10 +389,10 @@ static inline void ev_conn_rxclosed(struct flextcp_context *ctx,
   }
 }
 
-static inline void ev_conn_txclosed(struct flextcp_context *ctx,
-    struct flextcp_event *ev)
+static inline void ev_conn_txclosed(struct tas_context *ctx,
+    struct tas_ll_event *ev)
 {
-  struct flextcp_connection *c;
+  struct tas_ll_connection *c;
   struct socket *s;
 
   c = ev->ev.conn_txclosed.conn;
@@ -414,10 +414,10 @@ static inline void ev_conn_txclosed(struct flextcp_context *ctx,
   }
 }
 
-static inline void ev_conn_closed(struct flextcp_context *ctx,
-    struct flextcp_event *ev)
+static inline void ev_conn_closed(struct tas_context *ctx,
+    struct tas_ll_event *ev)
 {
-  struct flextcp_connection *c;
+  struct tas_ll_connection *c;
   struct socket *s;
 
   c = ev->ev.conn_closed.conn;
