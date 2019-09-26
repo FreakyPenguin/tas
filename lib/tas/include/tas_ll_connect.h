@@ -32,7 +32,7 @@
  * Connect to tas. Returns 0 on success, < 0 on error, > 0 if tas is not
  * ready yet.
  */
-int tas_ll_connect(struct flexnic_info **info, void **mem_start);
+int tas_ll_connect(struct tas_fp_info **info, void **mem_start);
 
 /** Connect to tas internal memory. */
 int tas_ll_connect_internal(void **int_mem_start);

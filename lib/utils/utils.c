@@ -82,7 +82,7 @@ void util_dump_mem(const void *mem, size_t len)
   fprintf(stderr, "\n");
 }
 
-void util_flexnic_kick(struct flextcp_pl_appctx *ctx, uint32_t ts_us)
+void util_tas_kick(struct tas_fp_appctx *ctx, uint32_t ts_us)
 {
   if(ts_us - ctx->last_ts > POLL_CYCLE) {
     // Kick kernel

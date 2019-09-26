@@ -40,12 +40,12 @@ static void *map_region(const char *name, size_t len);
 static void *map_region_huge(const char *name, size_t len)
   __attribute__((used));
 
-static struct flexnic_info *info = NULL;
+static struct tas_fp_info *info = NULL;
 
-int tas_ll_connect(struct flexnic_info **p_info, void **p_mem_start)
+int tas_ll_connect(struct tas_fp_info **p_info, void **p_mem_start)
 {
   void *m;
-  volatile struct flexnic_info *fi;
+  volatile struct tas_fp_info *fi;
   int err_ret = -1;
 
   /* return error, if already connected */
@@ -55,35 +55,35 @@ int tas_ll_connect(struct flexnic_info **p_info, void **p_mem_start)
   }
 
   /* open and map flexnic info shm region */
-  if ((m = map_region(FLEXNIC_NAME_INFO, FLEXNIC_INFO_BYTES)) == NULL) {
+  if ((m = map_region(TAS_FP_NAME_INFO, TAS_FP_INFO_BYTES)) == NULL) {
     perror("tas_ll_connect: map_region info failed");
     goto error_exit;
   }
 
   /* abort if not ready yet */
-  fi = (volatile struct flexnic_info *) m;
-  if ((fi->flags & FLEXNIC_FLAG_READY) != FLEXNIC_FLAG_READY) {
+  fi = (volatile struct tas_fp_info *) m;
+  if ((fi->flags & TAS_FP_INFO_FLAG_READY) != TAS_FP_INFO_FLAG_READY) {
     err_ret = 1;
     goto error_unmap_info;
   }
 
   /* open and map dma shm region */
-  if ((fi->flags & FLEXNIC_FLAG_HUGEPAGES) == FLEXNIC_FLAG_HUGEPAGES) {
-    m = map_region_huge(FLEXNIC_NAME_DMA_MEM, fi->dma_mem_size);
+  if ((fi->flags & TAS_FP_INFO_FLAG_HUGEPAGES) == TAS_FP_INFO_FLAG_HUGEPAGES) {
+    m = map_region_huge(TAS_FP_NAME_BUFMEM, fi->buf_mem_size);
   } else {
-    m = map_region(FLEXNIC_NAME_DMA_MEM, fi->dma_mem_size);
+    m = map_region(TAS_FP_NAME_BUFMEM, fi->buf_mem_size);
   }
   if (m == NULL) {
     perror("tas_ll_connect: mapping dma memory failed");
     goto error_unmap_info;
   }
 
-  *p_info = info = (struct flexnic_info *) fi;
+  *p_info = info = (struct tas_fp_info *) fi;
   *p_mem_start = m;
   return 0;
 
 error_unmap_info:
-  munmap(m, FLEXNIC_INFO_BYTES);
+  munmap(m, TAS_FP_INFO_BYTES);
 error_exit:
   return err_ret;
 }
@@ -98,10 +98,10 @@ int tas_ll_connect_internal(void **int_mem_start)
   }
 
   /* open and map flexnic internal memory shm region */
-  if ((info->flags & FLEXNIC_FLAG_HUGEPAGES) == FLEXNIC_FLAG_HUGEPAGES) {
-    m = map_region_huge(FLEXNIC_NAME_INTERNAL_MEM, info->internal_mem_size);
+  if ((info->flags & TAS_FP_INFO_FLAG_HUGEPAGES) == TAS_FP_INFO_FLAG_HUGEPAGES) {
+    m = map_region_huge(TAS_FP_NAME_STATEMEM, info->state_mem_size);
   } else {
-    m = map_region(FLEXNIC_NAME_INTERNAL_MEM, info->internal_mem_size);
+    m = map_region(TAS_FP_NAME_STATEMEM, info->state_mem_size);
   }
   if (m == NULL) {
     perror("tas_ll_connect_internal: map_region failed");
@@ -137,7 +137,7 @@ static void *map_region_huge(const char *name, size_t len)
   void *m;
   char path[128];
 
-  snprintf(path, sizeof(path), "%s/%s", FLEXNIC_HUGE_PREFIX, name);
+  snprintf(path, sizeof(path), "%s/%s", TAS_FP_HUGE_PREFIX, name);
 
   if ((fd = open(path, O_RDWR)) == -1) {
     perror("map_region: shm_open memory failed");

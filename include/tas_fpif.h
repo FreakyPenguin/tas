@@ -30,36 +30,36 @@
 #include <tas_packet_defs.h>
 
 
-#define FLEXNIC_HUGE_PREFIX "/dev/hugepages"
+#define TAS_FP_HUGE_PREFIX "/dev/hugepages"
 
 /** Name for the info shared memory region. */
-#define FLEXNIC_NAME_INFO "tas_info"
-/** Name for flexnic dma shared memory region. */
-#define FLEXNIC_NAME_DMA_MEM "tas_memory"
-/** Name for flexnic internal shared memory region. */
-#define FLEXNIC_NAME_INTERNAL_MEM "tas_internal"
+#define TAS_FP_NAME_INFO "tas_info"
+/** Name for tas buffer shared memory region. */
+#define TAS_FP_NAME_BUFMEM "tas_memory"
+/** Name for tas internal fp state shared memory region. */
+#define TAS_FP_NAME_STATEMEM "tas_internal"
 
 /** Size of the info shared memory region. */
-#define FLEXNIC_INFO_BYTES 0x1000
+#define TAS_FP_INFO_BYTES 0x1000
 
-/** Indicates that flexnic is done initializing. */
-#define FLEXNIC_FLAG_READY 1
-/** Indicates that huge pages should be used for the internal and dma memory */
-#define FLEXNIC_FLAG_HUGEPAGES 2
+/** Indicates that tas is done initializing. */
+#define TAS_FP_INFO_FLAG_READY 1
+/** Indicates that huge pages should be used for the state and buffer memory */
+#define TAS_FP_INFO_FLAG_HUGEPAGES 2
 
 /** Info struct: layout of info shared memory region */
-struct flexnic_info {
-  /** Flags: see FLEXNIC_FLAG_* */
+struct tas_fp_info {
+  /** Flags: see TAS_FP_INFO_FLAG_* */
   uint64_t flags;
-  /** Size of flexnic dma memory in bytes. */
-  uint64_t dma_mem_size;
-  /** Size of internal flexnic memory in bytes. */
-  uint64_t internal_mem_size;
+  /** Size of tas buffer memory in bytes. */
+  uint64_t buf_mem_size;
+  /** Size of fp state memory in bytes. */
+  uint64_t state_mem_size;
   /** export mac address */
   uint64_t mac_address;
   /** Number of queues in queue manager */
   uint32_t qmq_num;
-  /** Number of cores in flexnic emulator */
+  /** Maximum number of cores used for tas fastpath emulator */
   uint32_t cores_num;
 } __attribute__((packed));
 
@@ -68,11 +68,11 @@ struct flexnic_info {
 /******************************************************************************/
 /* Kernel RX queue */
 
-#define FLEXTCP_PL_KRX_INVALID 0x0
-#define FLEXTCP_PL_KRX_PACKET 0x1
+#define TAS_FP_SPRX_INVALID 0x0
+#define TAS_FP_SPRX_PACKET 0x1
 
 /** Kernel RX queue entry */
-struct flextcp_pl_krx {
+struct tas_fp_sprx {
   uint64_t addr;
   union {
     struct {
@@ -85,19 +85,19 @@ struct flextcp_pl_krx {
   volatile uint8_t type;
 } __attribute__((packed));
 
-STATIC_ASSERT(sizeof(struct flextcp_pl_krx) == 64, krx_size);
+STATIC_ASSERT(sizeof(struct tas_fp_sprx) == 64, krx_size);
 
 
 /******************************************************************************/
 /* Kernel TX queue */
 
-#define FLEXTCP_PL_KTX_INVALID 0x0
-#define FLEXTCP_PL_KTX_PACKET 0x1
-#define FLEXTCP_PL_KTX_CONNRETRAN 0x2
-#define FLEXTCP_PL_KTX_PACKET_NOTS 0x3
+#define TAS_FP_SPTX_INVALID 0x0
+#define TAS_FP_SPTX_PACKET 0x1
+#define TAS_FP_SPTX_CONNRETRAN 0x2
+#define TAS_FP_SPTX_PACKET_NOTS 0x3
 
 /** Kernel TX queue entry */
-struct flextcp_pl_ktx {
+struct tas_fp_sptx {
   union {
     struct {
       uint64_t addr;
@@ -111,19 +111,19 @@ struct flextcp_pl_ktx {
   volatile uint8_t type;
 } __attribute__((packed));
 
-STATIC_ASSERT(sizeof(struct flextcp_pl_ktx) == 64, ktx_size);
+STATIC_ASSERT(sizeof(struct tas_fp_sptx) == 64, ktx_size);
 
 
 /******************************************************************************/
 /* App RX queue */
 
-#define FLEXTCP_PL_ARX_INVALID    0x0
-#define FLEXTCP_PL_ARX_CONNUPDATE 0x1
+#define TAS_FP_ARX_INVALID    0x0
+#define TAS_FP_ARX_CONNUPDATE 0x1
 
-#define FLEXTCP_PL_ARX_FLRXDONE  0x1
+#define TAS_FP_ARX_FLRXDONE  0x1
 
 /** Update receive and transmit buffer of flow */
-struct flextcp_pl_arx_connupdate {
+struct tas_fp_arx_connupdate {
   uint64_t opaque;
   uint32_t rx_bump;
   uint32_t rx_pos;
@@ -132,25 +132,25 @@ struct flextcp_pl_arx_connupdate {
 } __attribute__((packed));
 
 /** Application RX queue entry */
-struct flextcp_pl_arx {
+struct tas_fp_arx {
   union {
-    struct flextcp_pl_arx_connupdate connupdate;
+    struct tas_fp_arx_connupdate connupdate;
     uint8_t raw[31];
   } __attribute__((packed)) msg;
   volatile uint8_t type;
 } __attribute__((packed));
 
-STATIC_ASSERT(sizeof(struct flextcp_pl_arx) == 32, arx_size);
+STATIC_ASSERT(sizeof(struct tas_fp_arx) == 32, arx_size);
 
 /******************************************************************************/
 /* App TX queue */
 
-#define FLEXTCP_PL_ATX_CONNUPDATE 0x1
+#define TAS_FP_ATX_CONNUPDATE 0x1
 
-#define FLEXTCP_PL_ATX_FLTXDONE  0x1
+#define TAS_FP_ATX_FLTXDONE  0x1
 
 /** Application TX queue entry */
-struct flextcp_pl_atx {
+struct tas_fp_atx {
   union {
     struct {
       uint32_t rx_bump;
@@ -164,21 +164,21 @@ struct flextcp_pl_atx {
   volatile uint8_t type;
 } __attribute__((packed));
 
-STATIC_ASSERT(sizeof(struct flextcp_pl_atx) == 16, atx_size);
+STATIC_ASSERT(sizeof(struct tas_fp_atx) == 16, atx_size);
 
 /******************************************************************************/
-/* Internal flexnic memory */
+/* Internal fast path state memory */
 
-#define FLEXNIC_PL_APPST_NUM        8
-#define FLEXNIC_PL_APPST_CTX_NUM   31
-#define FLEXNIC_PL_APPST_CTX_MCS   16
-#define FLEXNIC_PL_APPCTX_NUM      16
-#define FLEXNIC_PL_FLOWST_NUM     (128 * 1024)
-#define FLEXNIC_PL_FLOWHT_ENTRIES (FLEXNIC_PL_FLOWST_NUM * 2)
-#define FLEXNIC_PL_FLOWHT_NBSZ      4
+#define TAS_FP_APPST_NUM        8
+#define TAS_FP_APPST_CTX_NUM   31
+#define TAS_FP_APPST_CTX_MCS   16
+#define TAS_FP_APPCTX_NUM      16
+#define TAS_FP_FLOWST_NUM     (128 * 1024)
+#define TAS_FP_FLOWHT_ENTRIES (TAS_FP_FLOWST_NUM * 2)
+#define TAS_FP_FLOWHT_NBSZ      4
 
 /** Application state */
-struct flextcp_pl_appst {
+struct tas_fp_appst {
   /********************************************************/
   /* read-only fields */
 
@@ -186,12 +186,12 @@ struct flextcp_pl_appst {
   uint16_t ctx_num;
 
   /** IDs of contexts */
-  uint16_t ctx_ids[FLEXNIC_PL_APPST_CTX_NUM];
+  uint16_t ctx_ids[TAS_FP_APPST_CTX_NUM];
 } __attribute__((packed));
 
 
 /** Application context registers */
-struct flextcp_pl_appctx {
+struct tas_fp_appctx {
   /********************************************************/
   /* read-only fields */
   uint64_t rx_base;
@@ -210,16 +210,16 @@ struct flextcp_pl_appctx {
 } __attribute__((packed));
 
 /** Enable out of order receive processing members */
-#define FLEXNIC_PL_OOO_RECV 1
+#define TAS_FP_OOO_RECV 1
 
-#define FLEXNIC_PL_FLOWST_SLOWPATH 1
-#define FLEXNIC_PL_FLOWST_ECN 8
-#define FLEXNIC_PL_FLOWST_TXFIN 16
-#define FLEXNIC_PL_FLOWST_RXFIN 32
-#define FLEXNIC_PL_FLOWST_RX_MASK (~63ULL)
+#define TAS_FP_FLOWST_SLOWPATH 1
+#define TAS_FP_FLOWST_ECN 8
+#define TAS_FP_FLOWST_TXFIN 16
+#define TAS_FP_FLOWST_RXFIN 32
+#define TAS_FP_FLOWST_RX_MASK (~63ULL)
 
 /** Flow state registers */
-struct flextcp_pl_flowst {
+struct tas_fp_flowst {
   /********************************************************/
   /* read-only fields */
 
@@ -273,7 +273,7 @@ struct flextcp_pl_flowst {
   /** Duplicate ack count */
   uint32_t rx_dupack_cnt;
 
-#ifdef FLEXNIC_PL_OOO_RECV
+#ifdef TAS_FP_OOO_RECV
   /* Start of interval of out-of-order received data */
   uint32_t rx_ooo_start;
   /* Length of interval of out-of-order received data */
@@ -308,39 +308,39 @@ struct flextcp_pl_flowst {
 // 128
 } __attribute__((packed, aligned(64)));
 
-#define FLEXNIC_PL_FLOWHTE_VALID  (1 << 31)
-#define FLEXNIC_PL_FLOWHTE_POSSHIFT 29
+#define TAS_FP_FLOWHTE_VALID  (1 << 31)
+#define TAS_FP_FLOWHTE_POSSHIFT 29
 
 /** Flow lookup table entry */
-struct flextcp_pl_flowhte {
+struct tas_fp_flowhte {
   uint32_t flow_id;
   uint32_t flow_hash;
 } __attribute__((packed));
 
 
-#define FLEXNIC_PL_MAX_FLOWGROUPS 4096
+#define TAS_FP_MAX_FLOWGROUPS 4096
 
 /** Layout of internal pipeline memory */
-struct flextcp_pl_mem {
+struct tas_fp_state {
   /* registers for application context queues */
-  struct flextcp_pl_appctx appctx[FLEXNIC_PL_APPST_CTX_MCS][FLEXNIC_PL_APPCTX_NUM];
+  struct tas_fp_appctx appctx[TAS_FP_APPST_CTX_MCS][TAS_FP_APPCTX_NUM];
 
   /* registers for flow state */
-  struct flextcp_pl_flowst flowst[FLEXNIC_PL_FLOWST_NUM];
+  struct tas_fp_flowst flowst[TAS_FP_FLOWST_NUM];
 
   /* flow lookup table */
-  struct flextcp_pl_flowhte flowht[FLEXNIC_PL_FLOWHT_ENTRIES];
+  struct tas_fp_flowhte flowht[TAS_FP_FLOWHT_ENTRIES];
 
   /* registers for kernel queues */
-  struct flextcp_pl_appctx kctx[FLEXNIC_PL_APPST_CTX_MCS];
+  struct tas_fp_appctx kctx[TAS_FP_APPST_CTX_MCS];
 
   /* registers for application state */
-  struct flextcp_pl_appst appst[FLEXNIC_PL_APPST_NUM];
+  struct tas_fp_appst appst[TAS_FP_APPST_NUM];
 
-  uint8_t flow_group_steering[FLEXNIC_PL_MAX_FLOWGROUPS];
+  uint8_t flow_group_steering[TAS_FP_MAX_FLOWGROUPS];
 } __attribute__((packed));
 
 
-void util_flexnic_kick(struct flextcp_pl_appctx *ctx, uint32_t ts_us);
+void util_tas_kick(struct tas_fp_appctx *ctx, uint32_t ts_us);
 
 #endif /* ndef TAS_FPIF_H_ */

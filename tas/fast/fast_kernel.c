@@ -42,8 +42,8 @@ int fast_kernel_poll(struct dataplane_context *ctx,
     struct network_buf_handle *nbh, uint32_t ts)
 {
   void *buf = network_buf_buf(nbh);
-  struct flextcp_pl_appctx *kctx = &fp_state->kctx[ctx->id];
-  struct flextcp_pl_ktx *ktx;
+  struct tas_fp_appctx *kctx = &fp_state->kctx[ctx->id];
+  struct tas_fp_sptx *ktx;
   uint32_t flow_id, len;
   int ret = -1;
 
@@ -55,7 +55,7 @@ int fast_kernel_poll(struct dataplane_context *ctx,
 
   if (ktx->type == 0) {
     return -1;
-  } else if (ktx->type == FLEXTCP_PL_KTX_PACKET) {
+  } else if (ktx->type == TAS_FP_SPTX_PACKET) {
     len = ktx->msg.packet.len;
 
     /* Read transmit queue entry */
@@ -64,7 +64,7 @@ int fast_kernel_poll(struct dataplane_context *ctx,
     ret = 0;
     inject_tcp_ts(buf, len, ts, nbh);
     tx_send(ctx, nbh, 0, len);
-  } else if (ktx->type == FLEXTCP_PL_KTX_PACKET_NOTS) {
+  } else if (ktx->type == TAS_FP_SPTX_PACKET_NOTS) {
     /* send packet without filling in timestamp */
     len = ktx->msg.packet.len;
 
@@ -73,9 +73,9 @@ int fast_kernel_poll(struct dataplane_context *ctx,
 
     ret = 0;
     tx_send(ctx, nbh, 0, len);
-  } else if (ktx->type == FLEXTCP_PL_KTX_CONNRETRAN) {
+  } else if (ktx->type == TAS_FP_SPTX_CONNRETRAN) {
     flow_id = ktx->msg.connretran.flow_id;
-    if (flow_id >= FLEXNIC_PL_FLOWST_NUM) {
+    if (flow_id >= TAS_FP_FLOWST_NUM) {
       fprintf(stderr, "fast_kernel_qman: invalid flow id=%u\n", flow_id);
       abort();
     }
@@ -119,8 +119,8 @@ static void fast_kernel_kick(void)
 void fast_kernel_packet(struct dataplane_context *ctx,
     struct network_buf_handle *nbh)
 {
-  struct flextcp_pl_appctx *kctx = &fp_state->kctx[ctx->id];
-  struct flextcp_pl_krx *krx;
+  struct tas_fp_appctx *kctx = &fp_state->kctx[ctx->id];
+  struct tas_fp_sprx *krx;
   uint16_t len;
 
   /* queue not initialized yet */
@@ -154,7 +154,7 @@ void fast_kernel_packet(struct dataplane_context *ctx,
   MEM_BARRIER();
 
   /* krx queue header */
-  krx->type = FLEXTCP_PL_KRX_PACKET;
+  krx->type = TAS_FP_SPRX_PACKET;
   fast_kernel_kick();
 }
 

@@ -32,15 +32,15 @@
 
 void fast_appctx_poll_pf(struct dataplane_context *ctx, uint32_t id)
 {
-  struct flextcp_pl_appctx *actx = &fp_state->appctx[ctx->id][id];
+  struct tas_fp_appctx *actx = &fp_state->appctx[ctx->id][id];
   rte_prefetch0(dma_pointer(actx->tx_base + actx->tx_head, 1));
 }
 
 int fast_appctx_poll_fetch(struct dataplane_context *ctx, uint32_t id,
     void **pqe)
 {
-  struct flextcp_pl_appctx *actx = &fp_state->appctx[ctx->id][id];
-  struct flextcp_pl_atx *atx;
+  struct tas_fp_appctx *actx = &fp_state->appctx[ctx->id][id];
+  struct tas_fp_atx *atx;
   uint8_t type;
   uint32_t flow_id  = -1;
 
@@ -55,7 +55,7 @@ int fast_appctx_poll_fetch(struct dataplane_context *ctx, uint32_t id,
 
   if (type == 0) {
     return -1;
-  } else if (type != FLEXTCP_PL_ATX_CONNUPDATE) {
+  } else if (type != TAS_FP_ATX_CONNUPDATE) {
     fprintf(stderr, "fast_appctx_poll: unknown type: %u id=%u\n", type,
         id);
     abort();
@@ -65,7 +65,7 @@ int fast_appctx_poll_fetch(struct dataplane_context *ctx, uint32_t id,
 
   /* update RX/TX queue pointers for connection */
   flow_id = atx->msg.connupdate.flow_id;
-  if (flow_id >= FLEXNIC_PL_FLOWST_NUM) {
+  if (flow_id >= TAS_FP_FLOWST_NUM) {
     fprintf(stderr, "fast_appctx_poll: invalid flow id=%u\n", flow_id);
     abort();
   }
@@ -84,7 +84,7 @@ int fast_appctx_poll_fetch(struct dataplane_context *ctx, uint32_t id,
 int fast_appctx_poll_bump(struct dataplane_context *ctx, void *pqe,
     struct network_buf_handle *nbh, uint32_t ts)
 {
-  struct flextcp_pl_atx *atx = pqe;
+  struct tas_fp_atx *atx = pqe;
   int ret;
 
   ret = fast_flows_bump(ctx, atx->msg.connupdate.flow_id,
@@ -101,18 +101,18 @@ int fast_appctx_poll_bump(struct dataplane_context *ctx, void *pqe,
 }
 
 void fast_actx_rxq_pf(struct dataplane_context *ctx,
-    struct flextcp_pl_appctx *actx)
+    struct tas_fp_appctx *actx)
 {
 
   rte_prefetch0(dma_pointer(actx->rx_base + actx->rx_head,
-        sizeof(struct flextcp_pl_arx)));
+        sizeof(struct tas_fp_arx)));
 }
 
 
 int fast_actx_rxq_alloc(struct dataplane_context *ctx,
-    struct flextcp_pl_appctx *actx, struct flextcp_pl_arx **arx)
+    struct tas_fp_appctx *actx, struct tas_fp_arx **arx)
 {
-  struct flextcp_pl_arx *parx;
+  struct tas_fp_arx *parx;
   uint32_t rxnhead;
   int ret = 0;
 
@@ -137,8 +137,8 @@ int fast_actx_rxq_alloc(struct dataplane_context *ctx,
 
 int fast_actx_rxq_probe(struct dataplane_context *ctx, uint32_t id)
 {
-  struct flextcp_pl_appctx *actx = &fp_state->appctx[ctx->id][id];
-  struct flextcp_pl_arx *parx;
+  struct tas_fp_appctx *actx = &fp_state->appctx[ctx->id][id];
+  struct tas_fp_arx *parx;
   uint32_t pos, i;
 
   if (actx->rx_avail > actx->rx_len / 2) {

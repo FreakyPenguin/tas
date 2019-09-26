@@ -75,21 +75,21 @@ static void arx_cache_flush(struct dataplane_context *ctx, uint32_t ts) __attrib
 
 int dataplane_init(void)
 {
-  if (FLEXNIC_INTERNAL_MEM_SIZE < sizeof(struct flextcp_pl_mem)) {
+  if (FLEXNIC_INTERNAL_MEM_SIZE < sizeof(struct tas_fp_state)) {
     fprintf(stderr, "dataplane_init: internal flexnic memory size not "
         "sufficient (got %x, need %zx)\n", FLEXNIC_INTERNAL_MEM_SIZE,
-        sizeof(struct flextcp_pl_mem));
+        sizeof(struct tas_fp_state));
     return -1;
   }
 
-  if (fp_cores_max > FLEXNIC_PL_APPST_CTX_MCS) {
-    fprintf(stderr, "dataplane_init: more cores than FLEXNIC_PL_APPST_CTX_MCS "
-        "(%u)\n", FLEXNIC_PL_APPST_CTX_MCS);
+  if (fp_cores_max > TAS_FP_APPST_CTX_MCS) {
+    fprintf(stderr, "dataplane_init: more cores than TAS_FP_APPST_CTX_MCS "
+        "(%u)\n", TAS_FP_APPST_CTX_MCS);
     return -1;
   }
-  if (FLEXNIC_PL_FLOWST_NUM > FLEXNIC_NUM_QMQUEUES) {
+  if (TAS_FP_FLOWST_NUM > FLEXNIC_NUM_QMQUEUES) {
     fprintf(stderr, "dataplane_init: more flow states than queue manager queues"
-        "(%u > %u)\n", FLEXNIC_PL_FLOWST_NUM, FLEXNIC_NUM_QMQUEUES);
+        "(%u > %u)\n", TAS_FP_FLOWST_NUM, FLEXNIC_NUM_QMQUEUES);
     return -1;
   }
 
@@ -334,11 +334,11 @@ static unsigned poll_queues(struct dataplane_context *ctx, uint32_t ts)
   /* allocate buffers contents */
   max = bufcache_prealloc(ctx, max, &handles);
 
-  for (n = 0; n < FLEXNIC_PL_APPCTX_NUM; n++) {
-    fast_appctx_poll_pf(ctx, (ctx->poll_next_ctx + n) % FLEXNIC_PL_APPCTX_NUM);
+  for (n = 0; n < TAS_FP_APPCTX_NUM; n++) {
+    fast_appctx_poll_pf(ctx, (ctx->poll_next_ctx + n) % TAS_FP_APPCTX_NUM);
   }
 
-  for (n = 0; n < FLEXNIC_PL_APPCTX_NUM && k < max; n++) {
+  for (n = 0; n < TAS_FP_APPCTX_NUM && k < max; n++) {
     for (i = 0; i < BATCH_SIZE && k < max; i++) {
       ret = fast_appctx_poll_fetch(ctx, ctx->poll_next_ctx, &aqes[k]);
       if (ret == 0)
@@ -350,7 +350,7 @@ static unsigned poll_queues(struct dataplane_context *ctx, uint32_t ts)
     }
 
     ctx->poll_next_ctx = (ctx->poll_next_ctx + 1) %
-      FLEXNIC_PL_APPCTX_NUM;
+      TAS_FP_APPCTX_NUM;
   }
 
   for (j = 0; j < k; j++) {
@@ -362,7 +362,7 @@ static unsigned poll_queues(struct dataplane_context *ctx, uint32_t ts)
   /* apply buffer reservations */
   bufcache_alloc(ctx, num_bufs);
 
-  for (n = 0; n < FLEXNIC_PL_APPCTX_NUM; n++)
+  for (n = 0; n < TAS_FP_APPCTX_NUM; n++)
     fast_actx_rxq_probe(ctx, n);
 
   STATS_ADD(ctx, qs_total, total);
@@ -591,8 +591,8 @@ static void poll_scale(struct dataplane_context *ctx)
 static void arx_cache_flush(struct dataplane_context *ctx, uint32_t ts)
 {
   uint16_t i;
-  struct flextcp_pl_appctx *actx;
-  struct flextcp_pl_arx *parx[BATCH_SIZE];
+  struct tas_fp_appctx *actx;
+  struct tas_fp_arx *parx[BATCH_SIZE];
 
   for (i = 0; i < ctx->arx_num; i++) {
     actx = &fp_state->appctx[ctx->id][ctx->arx_ctx[i]];

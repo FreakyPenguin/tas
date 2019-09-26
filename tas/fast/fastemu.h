@@ -45,7 +45,7 @@ int fast_appctx_poll_bump(struct dataplane_context *ctx, void *pqe,
 int fast_appctx_poll(struct dataplane_context *ctx, uint32_t id,
     struct network_buf_handle *nbh, uint32_t ts);
 int fast_actx_rxq_alloc(struct dataplane_context *ctx,
-    struct flextcp_pl_appctx *actx, struct flextcp_pl_arx **arx);
+    struct tas_fp_appctx *actx, struct tas_fp_arx **arx);
 int fast_actx_rxq_probe(struct dataplane_context *ctx, uint32_t id);
 
 /* fast_flows.c */
@@ -56,7 +56,7 @@ void fast_flows_qman_pfbufs(struct dataplane_context *ctx, uint32_t *queues,
 int fast_flows_qman(struct dataplane_context *ctx, uint32_t queue,
     struct network_buf_handle *nbh, uint32_t ts);
 int fast_flows_qman_fwd(struct dataplane_context *ctx,
-    struct flextcp_pl_flowst *fs);
+    struct tas_fp_flowst *fs);
 int fast_flows_packet(struct dataplane_context *ctx,
     struct network_buf_handle *nbh, void *fs, struct tcp_opts *opts,
     uint32_t ts);
@@ -116,10 +116,10 @@ static inline void arx_cache_add(struct dataplane_context *ctx, uint16_t ctx_id,
   ctx->arx_cache[id].msg.connupdate.flags = type_flags >> 8;
 }
 
-static inline void actx_kick(struct flextcp_pl_appctx *ctx, uint32_t ts_us)
+static inline void actx_kick(struct tas_fp_appctx *ctx, uint32_t ts_us)
 {
   if(UNLIKELY(ts_us - ctx->last_ts > POLL_CYCLE)) {
-    util_flexnic_kick(ctx, ts_us);
+    util_tas_kick(ctx, ts_us);
     return;
   }
 

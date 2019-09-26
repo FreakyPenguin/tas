@@ -53,7 +53,7 @@ int flextcp_kernel_newctx(struct tas_context *ctx);
 void flextcp_kernel_kick(void);
 
 int tas_context_tx_alloc(struct tas_context *ctx,
-    struct flextcp_pl_atx **atx, uint16_t core);
+    struct tas_fp_atx **atx, uint16_t core);
 void tas_context_tx_done(struct tas_context *ctx, uint16_t core);
 
 uint32_t flextcp_conn_txbuf_available(struct tas_ll_connection *conn);

@@ -240,7 +240,7 @@ int flexnic_scale_to(uint32_t cores)
 
   fp_scale_to = cores;
 
-  util_flexnic_kick(&fp_state->kctx[0], util_timeout_time_us());
+  util_tas_kick(&fp_state->kctx[0], util_timeout_time_us());
   return 0;
 }
 

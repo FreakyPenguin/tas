@@ -8,10 +8,10 @@
 #include <tas_fpif.h>
 
 struct harness_fpc_ctx {
-  struct flextcp_pl_atx *atx_base;
+  struct tas_fp_atx *atx_base;
   size_t atx_pos;
 
-  struct flextcp_pl_arx *arx_base;
+  struct tas_fp_arx *arx_base;
   size_t arx_pos;
 };
 
@@ -227,13 +227,13 @@ int harness_atx_pull(size_t ctxid, size_t qid, uint32_t rx_bump,
 {
   struct harness_ctx *hc = &harness.ctxs[ctxid];
   struct harness_fpc_ctx *fpc = &hc->fpcs[qid];
-  struct flextcp_pl_atx *atx = &fpc->atx_base[fpc->atx_pos];
+  struct tas_fp_atx *atx = &fpc->atx_base[fpc->atx_pos];
 
   if (atx->type == 0)
     return -1;
 
 
-  if (atx->type == FLEXTCP_PL_ATX_CONNUPDATE &&
+  if (atx->type == TAS_FP_ATX_CONNUPDATE &&
       atx->msg.connupdate.rx_bump == rx_bump &&
       atx->msg.connupdate.tx_bump == tx_bump &&
       atx->msg.connupdate.flow_id == flow_id &&
@@ -257,9 +257,9 @@ int harness_arx_push(size_t ctxid, size_t qid, uint64_t opaque,
 {
   struct harness_ctx *hc = &harness.ctxs[ctxid];
   struct harness_fpc_ctx *fpc = &hc->fpcs[qid];
-  struct flextcp_pl_arx *arx = &fpc->arx_base[fpc->arx_pos];
+  struct tas_fp_arx *arx = &fpc->arx_base[fpc->arx_pos];
 
-  if (arx->type != FLEXTCP_PL_ARX_INVALID)
+  if (arx->type != TAS_FP_ARX_INVALID)
     return -1;
 
   arx->msg.connupdate.opaque = opaque;
@@ -267,7 +267,7 @@ int harness_arx_push(size_t ctxid, size_t qid, uint64_t opaque,
   arx->msg.connupdate.rx_pos = rx_pos;
   arx->msg.connupdate.tx_bump = tx_bump;
   arx->msg.connupdate.flags = flags;
-  arx->type = FLEXTCP_PL_ARX_CONNUPDATE;
+  arx->type = TAS_FP_ARX_CONNUPDATE;
 
   fpc->arx_pos++;
   if (fpc->arx_pos >= hc->arx_len)
@@ -292,7 +292,7 @@ int tas_ll_connect_internal(void **int_mem_start)
   return -1;
 }
 
-int tas_ll_connect(struct flexnic_info **p_info, void **p_mem_start)
+int tas_ll_connect(struct tas_fp_info **p_info, void **p_mem_start)
 {
   *p_info = NULL;
   /* hack: set mem start to 0 so we can just use pointers as offsets */

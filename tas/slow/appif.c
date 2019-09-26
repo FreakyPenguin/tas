@@ -107,7 +107,7 @@ int appif_init(void)
   }
 
   /* create freelist of doorbells (0 is used by kernel) */
-  for (i = FLEXNIC_PL_APPST_CTX_NUM; i > 0; i--) {
+  for (i = TAS_FP_APPST_CTX_NUM; i > 0; i--) {
     if ((adb = malloc(sizeof(*adb))) == NULL) {
       perror("appif_init: malloc doorbell failed");
       return -1;

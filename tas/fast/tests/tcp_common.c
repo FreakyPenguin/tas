@@ -31,7 +31,7 @@ static int test_tcp_valid_rxseq_single(uint32_t fs_seq, uint32_t fs_avail,
     uint32_t pkt_seq, uint32_t pkt_bytes, int process, uint16_t trim_start,
     uint16_t trim_end)
 {
-  struct flextcp_pl_flowst fs;
+  struct tas_fp_flowst fs;
   uint16_t ts, te;
   int ret;
 
@@ -120,7 +120,7 @@ static int test_tcp_trim_rxbuf_single(uint32_t fs_seq, uint32_t fs_avail,
     uint32_t pkt_seq, uint32_t pkt_bytes, int process, uint16_t trim_start,
     uint16_t trim_end)
 {
-  struct flextcp_pl_flowst fs;
+  struct tas_fp_flowst fs;
   uint16_t ts, te;
   int ret;
 

@@ -55,22 +55,22 @@ struct flow_key {
 #endif
 
 
-static void flow_tx_read(struct flextcp_pl_flowst *fs, uint32_t pos,
+static void flow_tx_read(struct tas_fp_flowst *fs, uint32_t pos,
     uint16_t len, void *dst);
-static void flow_rx_write(struct flextcp_pl_flowst *fs, uint32_t pos,
+static void flow_rx_write(struct tas_fp_flowst *fs, uint32_t pos,
     uint16_t len, const void *src);
-#ifdef FLEXNIC_PL_OOO_RECV
-static void flow_rx_seq_write(struct flextcp_pl_flowst *fs, uint32_t seq,
+#ifdef TAS_FP_OOO_RECV
+static void flow_rx_seq_write(struct tas_fp_flowst *fs, uint32_t seq,
     uint16_t len, const void *src);
 #endif
 static void flow_tx_segment(struct dataplane_context *ctx,
-    struct network_buf_handle *nbh, struct flextcp_pl_flowst *fs,
+    struct network_buf_handle *nbh, struct tas_fp_flowst *fs,
     uint32_t seq, uint32_t ack, uint32_t rxwnd, uint16_t payload,
     uint32_t payload_pos, uint32_t ts_echo, uint32_t ts_my, uint8_t fin);
 static void flow_tx_ack(struct dataplane_context *ctx, uint32_t seq,
     uint32_t ack, uint32_t rxwnd, uint32_t echo_ts, uint32_t my_ts,
     struct network_buf_handle *nbh, struct tcp_timestamp_opt *ts_opt);
-static void flow_reset_retransmit(struct flextcp_pl_flowst *fs);
+static void flow_reset_retransmit(struct tas_fp_flowst *fs);
 
 static inline void tcp_checksums(struct network_buf_handle *nbh,
     struct pkt_tcp *p, beui32_t ip_s, beui32_t ip_d, uint16_t l3_paylen);
@@ -88,7 +88,7 @@ void fast_flows_qman_pf(struct dataplane_context *ctx, uint32_t *queues,
 void fast_flows_qman_pfbufs(struct dataplane_context *ctx, uint32_t *queues,
     uint16_t n)
 {
-  struct flextcp_pl_flowst *fs;
+  struct tas_fp_flowst *fs;
   uint16_t i;
   void *p;
 
@@ -105,7 +105,7 @@ int fast_flows_qman(struct dataplane_context *ctx, uint32_t queue,
     struct network_buf_handle *nbh, uint32_t ts)
 {
   uint32_t flow_id = queue;
-  struct flextcp_pl_flowst *fs = &fp_state->flowst[flow_id];
+  struct tas_fp_flowst *fs = &fp_state->flowst[flow_id];
   uint32_t avail, len, tx_pos, tx_seq, ack, rx_wnd;
   uint16_t new_core;
   uint8_t fin;
@@ -133,7 +133,7 @@ int fast_flows_qman(struct dataplane_context *ctx, uint32_t queue,
       abort();
     }
 
-    util_flexnic_kick(&fp_state->kctx[new_core], ts);
+    util_tas_kick(&fp_state->kctx[new_core], ts);
 
     ret = -1;
     goto unlock;
@@ -184,7 +184,7 @@ int fast_flows_qman(struct dataplane_context *ctx, uint32_t queue,
   fs->tx_sent += len;
   fs->tx_avail -= len;
 
-  fin = (fs->rx_base_sp & FLEXNIC_PL_FLOWST_TXFIN) == FLEXNIC_PL_FLOWST_TXFIN &&
+  fin = (fs->rx_base_sp & TAS_FP_FLOWST_TXFIN) == TAS_FP_FLOWST_TXFIN &&
     !fs->tx_avail;
 
   /* make sure we don't send out dummy byte for FIN */
@@ -202,7 +202,7 @@ unlock:
 }
 
 int fast_flows_qman_fwd(struct dataplane_context *ctx,
-    struct flextcp_pl_flowst *fs)
+    struct tas_fp_flowst *fs)
 {
   unsigned avail;
   uint16_t flow_id = fs - fp_state->flowst;
@@ -261,14 +261,14 @@ void fast_flows_packet_pfbufs(struct dataplane_context *ctx,
   uint16_t i;
   uint64_t rx_base;
   void *p;
-  struct flextcp_pl_flowst *fs;
+  struct tas_fp_flowst *fs;
 
   for (i = 0; i < n; i++) {
     if (fss[i] == NULL)
       continue;
 
     fs = fss[i];
-    rx_base = fs->rx_base_sp & FLEXNIC_PL_FLOWST_RX_MASK;
+    rx_base = fs->rx_base_sp & TAS_FP_FLOWST_RX_MASK;
     p = dma_pointer(rx_base + fs->rx_next_pos, 1);
     rte_prefetch0(p);
   }
@@ -280,7 +280,7 @@ int fast_flows_packet(struct dataplane_context *ctx,
     uint32_t ts)
 {
   struct pkt_tcp *p = network_buf_bufoff(nbh);
-  struct flextcp_pl_flowst *fs = fsp;
+  struct tas_fp_flowst *fs = fsp;
   uint32_t payload_bytes, payload_off, seq, ack, old_avail, new_avail,
            orig_payload;
   uint8_t *payload;
@@ -339,7 +339,7 @@ int fast_flows_packet(struct dataplane_context *ctx,
 #endif
 
   /* state indicates slow path */
-  if (UNLIKELY((fs->rx_base_sp & FLEXNIC_PL_FLOWST_SLOWPATH) != 0)) {
+  if (UNLIKELY((fs->rx_base_sp & TAS_FP_FLOWST_SLOWPATH) != 0)) {
     fprintf(stderr, "dma_krx_pkt_fastpath: slowpath because of state\n");
     goto slowpath;
   }
@@ -412,7 +412,7 @@ int fast_flows_packet(struct dataplane_context *ctx,
     }
   }
 
-#ifdef FLEXNIC_PL_OOO_RECV
+#ifdef TAS_FP_OOO_RECV
   /* check if we should drop this segment */
   if (UNLIKELY(tcp_trim_rxbuf(fs, seq, payload_bytes, &trim_start, &trim_end) != 0)) {
     /* packet is completely outside of unused receive buffer */
@@ -497,7 +497,7 @@ int fast_flows_packet(struct dataplane_context *ctx,
   fs->rx_remote_avail = f_beui16(p->tcp.wnd);
 
   /* make sure we don't receive anymore payload after FIN */
-  if ((fs->rx_base_sp & FLEXNIC_PL_FLOWST_RXFIN) == FLEXNIC_PL_FLOWST_RXFIN &&
+  if ((fs->rx_base_sp & TAS_FP_FLOWST_RXFIN) == TAS_FP_FLOWST_RXFIN &&
       payload_bytes > 0)
   {
     fprintf(stderr, "fast_flows_packet: data after FIN dropped\n");
@@ -520,7 +520,7 @@ int fast_flows_packet(struct dataplane_context *ctx,
     trigger_ack = 1;
 #endif
 
-#ifdef FLEXNIC_PL_OOO_RECV
+#ifdef TAS_FP_OOO_RECV
     /* if we have out of order segments, check whether buffer is continuous
      * or superfluous */
     if (UNLIKELY(fs->rx_ooo_len != 0)) {
@@ -560,11 +560,11 @@ int fast_flows_packet(struct dataplane_context *ctx,
   }
 
   if ((TCPH_FLAGS(&p->tcp) & TCP_FIN) == TCP_FIN &&
-      !(fs->rx_base_sp & FLEXNIC_PL_FLOWST_RXFIN))
+      !(fs->rx_base_sp & TAS_FP_FLOWST_RXFIN))
   {
     if (fs->rx_next_seq == f_beui32(p->tcp.seqno) + orig_payload && !fs->rx_ooo_len) {
       fin_bump = 1;
-      fs->rx_base_sp |= FLEXNIC_PL_FLOWST_RXFIN;
+      fs->rx_base_sp |= TAS_FP_FLOWST_RXFIN;
       /* FIN takes up sequence number space */
       fs->rx_next_seq++;
       trigger_ack = 1;
@@ -597,10 +597,10 @@ unlock:
 #endif
 
     uint16_t type;
-    type = FLEXTCP_PL_ARX_CONNUPDATE;
+    type = TAS_FP_ARX_CONNUPDATE;
 
     if (fin_bump) {
-      type |= FLEXTCP_PL_ARX_FLRXDONE << 8;
+      type |= TAS_FP_ARX_FLRXDONE << 8;
     }
 
     arx_cache_add(ctx, fs->db_id, fs->opaque, rx_bump, rx_pos, tx_bump, type);
@@ -630,7 +630,7 @@ unlock:
 
 slowpath:
   if (!no_permanent_sp) {
-    fs->rx_base_sp |= FLEXNIC_PL_FLOWST_SLOWPATH;
+    fs->rx_base_sp |= TAS_FP_FLOWST_SLOWPATH;
   }
 
   fs_unlock(fs);
@@ -643,7 +643,7 @@ int fast_flows_bump(struct dataplane_context *ctx, uint32_t flow_id,
     uint16_t bump_seq, uint32_t rx_bump, uint32_t tx_bump, uint8_t flags,
     struct network_buf_handle *nbh, uint32_t ts)
 {
-  struct flextcp_pl_flowst *fs = &fp_state->flowst[flow_id];
+  struct tas_fp_flowst *fs = &fp_state->flowst[flow_id];
   uint32_t rx_avail_prev, old_avail, new_avail, tx_avail;
   int ret = -1;
 
@@ -688,14 +688,14 @@ int fast_flows_bump(struct dataplane_context *ctx, uint32_t flow_id,
   }
   fs->bump_seq = bump_seq;
 
-  if ((fs->rx_base_sp & FLEXNIC_PL_FLOWST_TXFIN) == FLEXNIC_PL_FLOWST_TXFIN &&
+  if ((fs->rx_base_sp & TAS_FP_FLOWST_TXFIN) == TAS_FP_FLOWST_TXFIN &&
       tx_bump != 0)
   {
     /* TX already closed, don't accept anything for transmission */
     fprintf(stderr, "fast_flows_bump: tx bump while TX is already closed\n");
     tx_bump = 0;
-  } else if ((flags & FLEXTCP_PL_ATX_FLTXDONE) == FLEXTCP_PL_ATX_FLTXDONE &&
-      !(fs->rx_base_sp & FLEXNIC_PL_FLOWST_TXFIN) &&
+  } else if ((flags & TAS_FP_ATX_FLTXDONE) == TAS_FP_ATX_FLTXDONE &&
+      !(fs->rx_base_sp & TAS_FP_FLOWST_TXFIN) &&
       !tx_bump)
   {
     /* Closing TX requires at least one byte (dummy) */
@@ -722,10 +722,10 @@ int fast_flows_bump(struct dataplane_context *ctx, uint32_t flow_id,
   new_avail = tcp_txavail(fs, &tx_avail);
 
   /* mark connection as closed if requested */
-  if ((flags & FLEXTCP_PL_ATX_FLTXDONE) == FLEXTCP_PL_ATX_FLTXDONE &&
-      !(fs->rx_base_sp & FLEXNIC_PL_FLOWST_TXFIN))
+  if ((flags & TAS_FP_ATX_FLTXDONE) == TAS_FP_ATX_FLTXDONE &&
+      !(fs->rx_base_sp & TAS_FP_FLOWST_TXFIN))
   {
-    fs->rx_base_sp |= FLEXNIC_PL_FLOWST_TXFIN;
+    fs->rx_base_sp |= TAS_FP_FLOWST_TXFIN;
   }
 
   /* update queue manager queue */
@@ -760,7 +760,7 @@ unlock:
 /* start retransmitting */
 void fast_flows_retransmit(struct dataplane_context *ctx, uint32_t flow_id)
 {
-  struct flextcp_pl_flowst *fs = &fp_state->flowst[flow_id];
+  struct tas_fp_flowst *fs = &fp_state->flowst[flow_id];
   uint32_t old_avail, new_avail = -1;
 
   fs_lock(fs);
@@ -808,7 +808,7 @@ out:
 }
 
 /* read `len` bytes from position `pos` in cirucular transmit buffer */
-static void flow_tx_read(struct flextcp_pl_flowst *fs, uint32_t pos,
+static void flow_tx_read(struct tas_fp_flowst *fs, uint32_t pos,
     uint16_t len, void *dst)
 {
   uint32_t part;
@@ -823,11 +823,11 @@ static void flow_tx_read(struct flextcp_pl_flowst *fs, uint32_t pos,
 }
 
 /* write `len` bytes to position `pos` in cirucular receive buffer */
-static void flow_rx_write(struct flextcp_pl_flowst *fs, uint32_t pos,
+static void flow_rx_write(struct tas_fp_flowst *fs, uint32_t pos,
     uint16_t len, const void *src)
 {
   uint32_t part;
-  uint64_t rx_base = fs->rx_base_sp & FLEXNIC_PL_FLOWST_RX_MASK;
+  uint64_t rx_base = fs->rx_base_sp & TAS_FP_FLOWST_RX_MASK;
 
   if (LIKELY(pos + len <= fs->rx_len)) {
     dma_write(rx_base + pos, len, src);
@@ -838,8 +838,8 @@ static void flow_rx_write(struct flextcp_pl_flowst *fs, uint32_t pos,
   }
 }
 
-#ifdef FLEXNIC_PL_OOO_RECV
-static void flow_rx_seq_write(struct flextcp_pl_flowst *fs, uint32_t seq,
+#ifdef TAS_FP_OOO_RECV
+static void flow_rx_seq_write(struct tas_fp_flowst *fs, uint32_t seq,
     uint16_t len, const void *src)
 {
   uint32_t diff = seq - fs->rx_next_seq;
@@ -852,7 +852,7 @@ static void flow_rx_seq_write(struct flextcp_pl_flowst *fs, uint32_t seq,
 #endif
 
 static void flow_tx_segment(struct dataplane_context *ctx,
-    struct network_buf_handle *nbh, struct flextcp_pl_flowst *fs,
+    struct network_buf_handle *nbh, struct tas_fp_flowst *fs,
     uint32_t seq, uint32_t ack, uint32_t rxwnd, uint16_t payload,
     uint32_t payload_pos, uint32_t ts_echo, uint32_t ts_my, uint8_t fin)
 {
@@ -881,7 +881,7 @@ static void flow_tx_segment(struct dataplane_context *ctx,
   p->ip.dest = fs->remote_ip;
 
   /* mark as ECN capable if flow marked so */
-  if ((fs->rx_base_sp & FLEXNIC_PL_FLOWST_ECN) == FLEXNIC_PL_FLOWST_ECN) {
+  if ((fs->rx_base_sp & TAS_FP_FLOWST_ECN) == TAS_FP_FLOWST_ECN) {
     IPH_ECN_SET(&p->ip, IP_ECN_ECT0);
   }
 
@@ -1006,7 +1006,7 @@ static void flow_tx_ack(struct dataplane_context *ctx, uint32_t seq,
   tx_send(ctx, nbh, network_buf_off(nbh), hdrlen);
 }
 
-static void flow_reset_retransmit(struct flextcp_pl_flowst *fs)
+static void flow_reset_retransmit(struct tas_fp_flowst *fs)
 {
   uint32_t x;
 
@@ -1064,8 +1064,8 @@ void fast_flows_packet_fss(struct dataplane_context *ctx,
   uint16_t i;
   struct pkt_tcp *p;
   struct flow_key key;
-  struct flextcp_pl_flowhte *e;
-  struct flextcp_pl_flowst *fs;
+  struct tas_fp_flowhte *e;
+  struct tas_fp_flowst *fs;
 
   /* calculate hashes and prefetch hash table buckets */
   for (i = 0; i < n; i++) {
@@ -1077,8 +1077,8 @@ void fast_flows_packet_fss(struct dataplane_context *ctx,
     key.remote_port = p->tcp.src;
     h = flow_hash(&key);
 
-    rte_prefetch0(&fp_state->flowht[h % FLEXNIC_PL_FLOWHT_ENTRIES]);
-    rte_prefetch0(&fp_state->flowht[(h + 3) % FLEXNIC_PL_FLOWHT_ENTRIES]);
+    rte_prefetch0(&fp_state->flowht[h % TAS_FP_FLOWHT_ENTRIES]);
+    rte_prefetch0(&fp_state->flowht[(h + 3) % TAS_FP_FLOWHT_ENTRIES]);
     hashes[i] = h;
   }
 
@@ -1086,16 +1086,16 @@ void fast_flows_packet_fss(struct dataplane_context *ctx,
    * (usually 1 per packet, except in case of collisions) */
   for (i = 0; i < n; i++) {
     h = hashes[i];
-    for (j = 0; j < FLEXNIC_PL_FLOWHT_NBSZ; j++) {
-      k = (h + j) % FLEXNIC_PL_FLOWHT_ENTRIES;
+    for (j = 0; j < TAS_FP_FLOWHT_NBSZ; j++) {
+      k = (h + j) % TAS_FP_FLOWHT_ENTRIES;
       e = &fp_state->flowht[k];
 
       ffid = e->flow_id;
       MEM_BARRIER();
       eh = e->flow_hash;
 
-      fid = ffid & ((1 << FLEXNIC_PL_FLOWHTE_POSSHIFT) - 1);
-      if ((ffid & FLEXNIC_PL_FLOWHTE_VALID) == 0 || eh != h) {
+      fid = ffid & ((1 << TAS_FP_FLOWHTE_POSSHIFT) - 1);
+      if ((ffid & TAS_FP_FLOWHTE_VALID) == 0 || eh != h) {
         continue;
       }
 
@@ -1109,16 +1109,16 @@ void fast_flows_packet_fss(struct dataplane_context *ctx,
     fss[i] = NULL;
     h = hashes[i];
 
-    for (j = 0; j < FLEXNIC_PL_FLOWHT_NBSZ; j++) {
-      k = (h + j) % FLEXNIC_PL_FLOWHT_ENTRIES;
+    for (j = 0; j < TAS_FP_FLOWHT_NBSZ; j++) {
+      k = (h + j) % TAS_FP_FLOWHT_ENTRIES;
       e = &fp_state->flowht[k];
 
       ffid = e->flow_id;
       MEM_BARRIER();
       eh = e->flow_hash;
 
-      fid = ffid & ((1 << FLEXNIC_PL_FLOWHTE_POSSHIFT) - 1);
-      if ((ffid & FLEXNIC_PL_FLOWHTE_VALID) == 0 || eh != h) {
+      fid = ffid & ((1 << TAS_FP_FLOWHTE_POSSHIFT) - 1);
+      if ((ffid & TAS_FP_FLOWHTE_VALID) == 0 || eh != h) {
         continue;
       }
 

@@ -31,8 +31,8 @@ macaddr_t eth_addr;
 
 void *tas_shm = (void *) 0;
 
-struct flextcp_pl_mem state_base;
-struct flextcp_pl_mem *fp_state = &state_base;
+struct tas_fp_state state_base;
+struct tas_fp_state *fp_state = &state_base;
 
 struct dataplane_context **ctxs = NULL;
 struct configuration config;
@@ -59,15 +59,15 @@ int qman_set(struct qman_thread *t, uint32_t id, uint32_t rate, uint32_t avail,
   return 0;
 }
 
-void util_flexnic_kick(struct flextcp_pl_appctx *ctx, uint32_t ts_us)
+void util_tas_kick(struct tas_fp_appctx *ctx, uint32_t ts_us)
 {
-  printf("util_flexnic_kick\n");
+  printf("util_tas_kick\n");
 }
 
 /* initialize basic flow state */
 static void flow_init(uint32_t fid, uint32_t rxlen, uint32_t txlen, uint64_t opaque)
 {
-  struct flextcp_pl_flowst *fs = &state_base.flowst[fid];
+  struct tas_fp_flowst *fs = &state_base.flowst[fid];
   void *rxbuf = mmap(NULL, rxlen, PROT_READ | PROT_WRITE,
       MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
   void *txbuf = mmap(NULL, rxlen, PROT_READ | PROT_WRITE,
@@ -101,7 +101,7 @@ static struct rte_mbuf *mbuf_alloc(void)
 void test_txbump_small(void *arg)
 {
   int ret;
-  struct flextcp_pl_flowst *fs = &state_base.flowst[0];
+  struct tas_fp_flowst *fs = &state_base.flowst[0];
   struct dataplane_context ctx;
   memset(&ctx, 0, sizeof(ctx));
 
@@ -124,7 +124,7 @@ void test_txbump_small(void *arg)
 void test_txbump_full(void *arg)
 {
   int ret;
-  struct flextcp_pl_flowst *fs = &state_base.flowst[0];
+  struct tas_fp_flowst *fs = &state_base.flowst[0];
   struct dataplane_context ctx;
   memset(&ctx, 0, sizeof(ctx));
 
@@ -147,7 +147,7 @@ void test_txbump_full(void *arg)
 void test_txbump_toolong(void *arg)
 {
   int ret;
-  struct flextcp_pl_flowst *fs = &state_base.flowst[0];
+  struct tas_fp_flowst *fs = &state_base.flowst[0];
   struct dataplane_context ctx;
   memset(&ctx, 0, sizeof(ctx));
 
@@ -164,7 +164,7 @@ void test_txbump_toolong(void *arg)
 void test_rxbump_toolong(void *arg)
 {
   int ret;
-  struct flextcp_pl_flowst *fs = &state_base.flowst[0];
+  struct tas_fp_flowst *fs = &state_base.flowst[0];
   struct dataplane_context ctx;
   memset(&ctx, 0, sizeof(ctx));
 
@@ -187,7 +187,7 @@ void test_rxbump_toolong(void *arg)
 void test_rxbump_fc_reopen_notx(void *arg)
 {
   int ret;
-  struct flextcp_pl_flowst *fs = &state_base.flowst[0];
+  struct tas_fp_flowst *fs = &state_base.flowst[0];
   struct dataplane_context ctx;
   memset(&ctx, 0, sizeof(ctx));
 
@@ -213,7 +213,7 @@ void test_rxbump_fc_reopen_notx(void *arg)
 void test_rxbump_fc_reopen_tx(void *arg)
 {
   int ret;
-  struct flextcp_pl_flowst *fs = &state_base.flowst[0];
+  struct tas_fp_flowst *fs = &state_base.flowst[0];
   struct dataplane_context ctx;
   memset(&ctx, 0, sizeof(ctx));
 
@@ -237,7 +237,7 @@ void test_rxbump_fc_reopen_tx(void *arg)
 void test_rxbump_fc_reopen_deadlock(void *arg)
 {
   int ret;
-  struct flextcp_pl_flowst *fs = &state_base.flowst[0];
+  struct tas_fp_flowst *fs = &state_base.flowst[0];
   struct dataplane_context ctx;
   memset(&ctx, 0, sizeof(ctx));
 

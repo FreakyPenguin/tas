@@ -42,8 +42,8 @@
 #include <tas_fpif.h>
 
 void *tas_shm = NULL;
-struct flextcp_pl_mem *fp_state = NULL;
-struct flexnic_info *tas_info = NULL;
+struct tas_fp_state *fp_state = NULL;
+struct tas_fp_info *tas_info = NULL;
 
 /* destroy shared memory region */
 static void destroy_shm(const char *name, size_t size, void *addr);
@@ -59,10 +59,10 @@ int shm_preinit(void)
 {
   /* create shm for dma memory */
   if (config.fp_hugepages) {
-    tas_shm = util_create_shmsiszed_huge(FLEXNIC_NAME_DMA_MEM,
+    tas_shm = util_create_shmsiszed_huge(TAS_FP_NAME_BUFMEM,
         FLEXNIC_DMA_MEM_SIZE, NULL);
   } else {
-    tas_shm = util_create_shmsiszed(FLEXNIC_NAME_DMA_MEM, FLEXNIC_DMA_MEM_SIZE,
+    tas_shm = util_create_shmsiszed(TAS_FP_NAME_BUFMEM, FLEXNIC_DMA_MEM_SIZE,
         NULL);
   }
   if (tas_shm == NULL) {
@@ -72,10 +72,10 @@ int shm_preinit(void)
 
   /* create shm for internal memory */
   if (config.fp_hugepages) {
-    fp_state = util_create_shmsiszed_huge(FLEXNIC_NAME_INTERNAL_MEM,
+    fp_state = util_create_shmsiszed_huge(TAS_FP_NAME_STATEMEM,
         FLEXNIC_INTERNAL_MEM_SIZE, NULL);
   } else {
-    fp_state = util_create_shmsiszed(FLEXNIC_NAME_INTERNAL_MEM,
+    fp_state = util_create_shmsiszed(TAS_FP_NAME_STATEMEM,
         FLEXNIC_INTERNAL_MEM_SIZE, NULL);
   }
   if (fp_state == NULL) {
@@ -92,21 +92,21 @@ int shm_init(unsigned num)
   umask(0);
 
   /* create shm for tas_info */
-  tas_info = util_create_shmsiszed(FLEXNIC_NAME_INFO, FLEXNIC_INFO_BYTES, NULL);
+  tas_info = util_create_shmsiszed(TAS_FP_NAME_INFO, TAS_FP_INFO_BYTES, NULL);
   if (tas_info == NULL) {
     fprintf(stderr, "mapping flexnic tas_info failed\n");
     shm_cleanup();
     return -1;
   }
 
-  tas_info->dma_mem_size = FLEXNIC_DMA_MEM_SIZE;
-  tas_info->internal_mem_size = FLEXNIC_INTERNAL_MEM_SIZE;
+  tas_info->buf_mem_size = FLEXNIC_DMA_MEM_SIZE;
+  tas_info->state_mem_size = FLEXNIC_INTERNAL_MEM_SIZE;
   tas_info->qmq_num = FLEXNIC_NUM_QMQUEUES;
   tas_info->cores_num = num;
   tas_info->mac_address = 0;
 
   if (config.fp_hugepages)
-    tas_info->flags |= FLEXNIC_FLAG_HUGEPAGES;
+    tas_info->flags |= TAS_FP_INFO_FLAG_HUGEPAGES;
 
   return 0;
 }
@@ -116,10 +116,10 @@ void shm_cleanup(void)
   /* cleanup internal memory region */
   if (fp_state != NULL) {
     if (config.fp_hugepages) {
-      destroy_shm_huge(FLEXNIC_NAME_INTERNAL_MEM, FLEXNIC_INTERNAL_MEM_SIZE,
+      destroy_shm_huge(TAS_FP_NAME_STATEMEM, FLEXNIC_INTERNAL_MEM_SIZE,
           fp_state);
     } else {
-      destroy_shm(FLEXNIC_NAME_INTERNAL_MEM, FLEXNIC_INTERNAL_MEM_SIZE,
+      destroy_shm(TAS_FP_NAME_STATEMEM, FLEXNIC_INTERNAL_MEM_SIZE,
           fp_state);
     }
   }
@@ -127,21 +127,21 @@ void shm_cleanup(void)
   /* cleanup dma memory region */
   if (tas_shm != NULL) {
     if (config.fp_hugepages) {
-      destroy_shm_huge(FLEXNIC_NAME_DMA_MEM, FLEXNIC_DMA_MEM_SIZE, tas_shm);
+      destroy_shm_huge(TAS_FP_NAME_BUFMEM, FLEXNIC_DMA_MEM_SIZE, tas_shm);
     } else {
-      destroy_shm(FLEXNIC_NAME_DMA_MEM, FLEXNIC_DMA_MEM_SIZE, tas_shm);
+      destroy_shm(TAS_FP_NAME_BUFMEM, FLEXNIC_DMA_MEM_SIZE, tas_shm);
     }
   }
 
   /* cleanup tas_info memory region */
   if (tas_info != NULL) {
-    destroy_shm(FLEXNIC_NAME_INFO, FLEXNIC_INFO_BYTES, tas_info);
+    destroy_shm(TAS_FP_NAME_INFO, TAS_FP_INFO_BYTES, tas_info);
   }
 }
 
 void shm_set_ready(void)
 {
-  tas_info->flags |= FLEXNIC_FLAG_READY;
+  tas_info->flags |= TAS_FP_INFO_FLAG_READY;
 }
 
 void *util_create_shmsiszed(const char *name, size_t size, void *addr)
@@ -193,7 +193,7 @@ static void *util_create_shmsiszed_huge(const char *name, size_t size,
   void *p;
   char path[128];
 
-  snprintf(path, sizeof(path), "%s/%s", FLEXNIC_HUGE_PREFIX, name);
+  snprintf(path, sizeof(path), "%s/%s", TAS_FP_HUGE_PREFIX, name);
 
   if ((fd = open(path, O_CREAT | O_RDWR, 0666)) == -1) {
     perror("util_create_shmsiszed: open failed");
@@ -228,7 +228,7 @@ static void destroy_shm_huge(const char *name, size_t size, void *addr)
 {
   char path[128];
 
-  snprintf(path, sizeof(path), "%s/%s", FLEXNIC_HUGE_PREFIX, name);
+  snprintf(path, sizeof(path), "%s/%s", TAS_FP_HUGE_PREFIX, name);
 
   if (munmap(addr, size) != 0) {
     fprintf(stderr, "Warning: munmap failed (%s)\n", strerror(errno));

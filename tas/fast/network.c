@@ -426,9 +426,9 @@ static int reta_setup()
     goto error_exit;
   }
 
-  if (rss_reta_size > FLEXNIC_PL_MAX_FLOWGROUPS) {
+  if (rss_reta_size > TAS_FP_MAX_FLOWGROUPS) {
     fprintf(stderr, "reta_setup: reta size (%u) greater than maximum supported"
-        " (%u)\n", rss_reta_size, FLEXNIC_PL_MAX_FLOWGROUPS);
+        " (%u)\n", rss_reta_size, TAS_FP_MAX_FLOWGROUPS);
     abort();
   }
 

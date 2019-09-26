@@ -30,12 +30,12 @@
 #include <tas_ll_connect.h>
 #include <tas_fpif.h>
 
-struct flextcp_pl_mem *plm;
+struct tas_fp_state *plm;
 
 /** connect to flexnic shared memory regions */
 static int connect_flexnic(void)
 {
-  struct flexnic_info *info;
+  struct tas_fp_info *info;
   void *mem_start, *int_mem_start;
 
   if (tas_ll_connect(&info, &mem_start) != 0) {
@@ -49,7 +49,7 @@ static int connect_flexnic(void)
   }
   plm = int_mem_start;
 
-  if (info->internal_mem_size < sizeof(*plm)) {
+  if (info->state_mem_size < sizeof(*plm)) {
     fprintf(stderr, "internal memory smaller than expected\n");
     return -1;
   }
@@ -60,9 +60,9 @@ static int connect_flexnic(void)
 static int dump_appctx(uint16_t db_id)
 {
 #if 0
-  struct flextcp_pl_appctx *ctx;
+  struct tas_fp_appctx *ctx;
 
-  if (db_id >= FLEXNIC_PL_APPCTX_NUM) {
+  if (db_id >= TAS_FP_APPCTX_NUM) {
     fprintf(stderr, "dump_appctx: invalid doorbell id %u\n", db_id);
     return -1;
   }
@@ -102,10 +102,10 @@ static int dump_appctx(uint16_t db_id)
 
 static int dump_flow(uint32_t flow_id)
 {
-  struct flextcp_pl_flowst *fs;
+  struct tas_fp_flowst *fs;
   uint64_t mac = 0;
 
-  if (flow_id >= FLEXNIC_PL_FLOWST_NUM) {
+  if (flow_id >= TAS_FP_FLOWST_NUM) {
     fprintf(stderr, "dump_appctx: invalid doorbell id %u\n", flow_id);
     return -1;
   }
@@ -141,7 +141,7 @@ static int dump_flow(uint32_t flow_id)
          "        next_pos=%08x\n"
          "        next_seq=%010u\n"
          "      dupack_cnt=%08x\n"
-#ifdef FLEXNIC_PL_OOO_RECV
+#ifdef TAS_FP_OOO_RECV
          "       ooo_start=%08x\n"
          "         ooo_len=%08x\n"
 #endif
@@ -164,16 +164,16 @@ static int dump_flow(uint32_t flow_id)
          "         rtt_est=%10u\n"
          "  }\n"
          "}\n", flow_id, fs->opaque, fs->db_id,
-      !!(fs->rx_base_sp & FLEXNIC_PL_FLOWST_SLOWPATH),
-      !!(fs->rx_base_sp & FLEXNIC_PL_FLOWST_ECN),
-      !!(fs->rx_base_sp & FLEXNIC_PL_FLOWST_TXFIN),
-      !!(fs->rx_base_sp & FLEXNIC_PL_FLOWST_RXFIN),
+      !!(fs->rx_base_sp & TAS_FP_FLOWST_SLOWPATH),
+      !!(fs->rx_base_sp & TAS_FP_FLOWST_ECN),
+      !!(fs->rx_base_sp & TAS_FP_FLOWST_TXFIN),
+      !!(fs->rx_base_sp & TAS_FP_FLOWST_RXFIN),
       fs->bump_seq,
       f_beui32(fs->local_ip), f_beui16(fs->local_port), f_beui32(fs->remote_ip),
       f_beui16(fs->remote_port), mac,
-      (fs->rx_base_sp & FLEXNIC_PL_FLOWST_RX_MASK), fs->rx_len, fs->rx_avail,
+      (fs->rx_base_sp & TAS_FP_FLOWST_RX_MASK), fs->rx_len, fs->rx_avail,
       fs->rx_remote_avail, fs->rx_next_pos, fs->rx_next_seq, fs->rx_dupack_cnt,
-#ifdef FLEXNIC_PL_OOO_RECV
+#ifdef TAS_FP_OOO_RECV
       fs->rx_ooo_start, fs->rx_ooo_len,
 #endif
       fs->tx_base, fs->tx_len, fs->tx_avail, fs->tx_sent, fs->tx_next_pos,
@@ -192,10 +192,10 @@ int main(int argc, char *argv[])
     return EXIT_FAILURE;
   }
 
-  for (i = 0; i < FLEXNIC_PL_APPCTX_NUM; i++) {
+  for (i = 0; i < TAS_FP_APPCTX_NUM; i++) {
     dump_appctx(i);
   }
-  for (i = 0; i < FLEXNIC_PL_FLOWST_NUM; i++) {
+  for (i = 0; i < TAS_FP_FLOWST_NUM; i++) {
     dump_flow(i);
   }
 

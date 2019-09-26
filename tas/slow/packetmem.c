@@ -51,7 +51,7 @@ int packetmem_init(void)
   }
 
   ph->base = 0;
-  ph->len = tas_info->dma_mem_size;
+  ph->len = tas_info->buf_mem_size;
   ph->next = NULL;
   freelist = ph;
 

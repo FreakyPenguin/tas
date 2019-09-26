@@ -55,7 +55,7 @@ static inline void event_kappin_st_conn_closed(
     struct kernel_appin_status *inev, struct tas_ll_event *outev);
 
 static inline int event_arx_connupdate(struct tas_context *ctx,
-    struct flextcp_pl_arx_connupdate *inev,
+    struct tas_fp_arx_connupdate *inev,
     struct tas_ll_event *outevs, int outn, uint16_t fn_core);
 
 static int kernel_poll(struct tas_context *ctx, int num,
@@ -69,7 +69,7 @@ static void conns_bump(struct tas_context *ctx) __attribute__((noinline));
 static void txq_probe(struct tas_context *ctx, unsigned n) __attribute__((noinline));
 
 void *flexnic_mem = NULL;
-static struct flexnic_info *flexnic_info = NULL;
+static struct tas_fp_info *tas_fp_info = NULL;
 int flexnic_evfd[TAS_MAX_FTCPCORES];
 
 void tas_ll_block(struct tas_context *ctx, int timeout_ms)
@@ -106,7 +106,7 @@ int tas_ll_init(void)
     return -1;
   }
 
-  if (tas_ll_connect(&flexnic_info, &flexnic_mem) != 0) {
+  if (tas_ll_connect(&tas_fp_info, &flexnic_mem) != 0) {
     fprintf(stderr, "tas_ll_init: connecting to flexnic failed\n");
     return -1;
   }
@@ -211,7 +211,7 @@ static int fastpath_poll(struct tas_context *ctx, int num,
     struct tas_ll_event *events, int *used)
 {
   int i, j, ran_out;
-  struct flextcp_pl_arx *arx_q, *arx;
+  struct tas_fp_arx *arx_q, *arx;
   uint32_t head;
   uint16_t k;
 
@@ -219,14 +219,14 @@ static int fastpath_poll(struct tas_context *ctx, int num,
   for (k = 0; k < ctx->num_queues && i < num; k++) {
     ran_out = 0;
 
-    arx_q = (struct flextcp_pl_arx *) ctx->queues[ctx->next_queue].rxq_base;
+    arx_q = (struct tas_fp_arx *) ctx->queues[ctx->next_queue].rxq_base;
     head = ctx->queues[ctx->next_queue].rxq_head;
     for (; i < num;) {
       j = 0;
       arx = &arx_q[head / sizeof(*arx)];
-      if (arx->type == FLEXTCP_PL_ARX_INVALID) {
+      if (arx->type == TAS_FP_ARX_INVALID) {
         break;
-      } else if (arx->type == FLEXTCP_PL_ARX_CONNUPDATE) {
+      } else if (arx->type == TAS_FP_ARX_CONNUPDATE) {
         j = event_arx_connupdate(ctx, &arx->msg.connupdate, events + i, num - i, ctx->next_queue);
       } else {
         fprintf(stderr, "tas_context_poll: kout type=%u head=%x\n", arx->type, head);
@@ -265,23 +265,23 @@ static int fastpath_poll(struct tas_context *ctx, int num,
 static inline void fetch_8ts(struct tas_context *ctx, uint32_t *heads,
     uint16_t q, uint8_t *ts)
 {
-  struct flextcp_pl_arx *p0, *p1, *p2, *p3, *p4, *p5, *p6, *p7;
+  struct tas_fp_arx *p0, *p1, *p2, *p3, *p4, *p5, *p6, *p7;
 
-  p0 = (struct flextcp_pl_arx *) (ctx->queues[q].rxq_base + heads[q]);
+  p0 = (struct tas_fp_arx *) (ctx->queues[q].rxq_base + heads[q]);
   q = (q + 1 < ctx->num_queues ? q + 1 : 0);
-  p1 = (struct flextcp_pl_arx *) (ctx->queues[q].rxq_base + heads[q]);
+  p1 = (struct tas_fp_arx *) (ctx->queues[q].rxq_base + heads[q]);
   q = (q + 1 < ctx->num_queues ? q + 1 : 0);
-  p2 = (struct flextcp_pl_arx *) (ctx->queues[q].rxq_base + heads[q]);
+  p2 = (struct tas_fp_arx *) (ctx->queues[q].rxq_base + heads[q]);
   q = (q + 1 < ctx->num_queues ? q + 1 : 0);
-  p3 = (struct flextcp_pl_arx *) (ctx->queues[q].rxq_base + heads[q]);
+  p3 = (struct tas_fp_arx *) (ctx->queues[q].rxq_base + heads[q]);
   q = (q + 1 < ctx->num_queues ? q + 1 : 0);
-  p4 = (struct flextcp_pl_arx *) (ctx->queues[q].rxq_base + heads[q]);
+  p4 = (struct tas_fp_arx *) (ctx->queues[q].rxq_base + heads[q]);
   q = (q + 1 < ctx->num_queues ? q + 1 : 0);
-  p5 = (struct flextcp_pl_arx *) (ctx->queues[q].rxq_base + heads[q]);
+  p5 = (struct tas_fp_arx *) (ctx->queues[q].rxq_base + heads[q]);
   q = (q + 1 < ctx->num_queues ? q + 1 : 0);
-  p6 = (struct flextcp_pl_arx *) (ctx->queues[q].rxq_base + heads[q]);
+  p6 = (struct tas_fp_arx *) (ctx->queues[q].rxq_base + heads[q]);
   q = (q + 1 < ctx->num_queues ? q + 1 : 0);
-  p7 = (struct flextcp_pl_arx *) (ctx->queues[q].rxq_base + heads[q]);
+  p7 = (struct tas_fp_arx *) (ctx->queues[q].rxq_base + heads[q]);
   q = (q + 1 < ctx->num_queues ? q + 1 : 0);
 
   asm volatile(
@@ -320,15 +320,15 @@ static inline void fetch_8ts(struct tas_context *ctx, uint32_t *heads,
 static inline void fetch_4ts(struct tas_context *ctx, uint32_t *heads,
     uint16_t q, uint8_t *ts)
 {
-  struct flextcp_pl_arx *p0, *p1, *p2, *p3;
+  struct tas_fp_arx *p0, *p1, *p2, *p3;
 
-  p0 = (struct flextcp_pl_arx *) (ctx->queues[q].rxq_base + heads[q]);
+  p0 = (struct tas_fp_arx *) (ctx->queues[q].rxq_base + heads[q]);
   q = (q + 1 < ctx->num_queues ? q + 1 : 0);
-  p1 = (struct flextcp_pl_arx *) (ctx->queues[q].rxq_base + heads[q]);
+  p1 = (struct tas_fp_arx *) (ctx->queues[q].rxq_base + heads[q]);
   q = (q + 1 < ctx->num_queues ? q + 1 : 0);
-  p2 = (struct flextcp_pl_arx *) (ctx->queues[q].rxq_base + heads[q]);
+  p2 = (struct tas_fp_arx *) (ctx->queues[q].rxq_base + heads[q]);
   q = (q + 1 < ctx->num_queues ? q + 1 : 0);
-  p3 = (struct flextcp_pl_arx *) (ctx->queues[q].rxq_base + heads[q]);
+  p3 = (struct tas_fp_arx *) (ctx->queues[q].rxq_base + heads[q]);
   q = (q + 1 < ctx->num_queues ? q + 1 : 0);
 
   asm volatile(
@@ -354,14 +354,14 @@ static int fastpath_poll_vec(struct tas_context *ctx, int num,
     struct tas_ll_event *events, int *used)
 {
   int i, j, ran_out, found;
-  struct flextcp_pl_arx *arx;
+  struct tas_fp_arx *arx;
   uint32_t head;
   uint16_t l, k, q;
   uint8_t t;
   uint8_t types[ctx->num_queues];
   uint32_t qheads[ctx->num_queues];
 
-  struct flextcp_pl_arx *arxs[num];
+  struct tas_fp_arx *arxs[num];
   uint8_t arx_qs[num];
 
   for (q = 0; q < ctx->num_queues; q++) {
@@ -395,7 +395,7 @@ static int fastpath_poll_vec(struct tas_context *ctx, int num,
         qs -= 4;
       }
       while (qs > 0) {
-        arx = (struct flextcp_pl_arx *) (ctx->queues[q].rxq_base + qheads[q]);
+        arx = (struct tas_fp_arx *) (ctx->queues[q].rxq_base + qheads[q]);
         q = (q + 1 < ctx->num_queues ? q + 1 : 0);
         types[k] = arx->type;
         k++;
@@ -404,8 +404,8 @@ static int fastpath_poll_vec(struct tas_context *ctx, int num,
 
       /* prefetch connection state for all entries */
       for (k = 0, q = ctx->next_queue; k < ctx->num_queues && i + l < num; k++) {
-        if (types[k] == FLEXTCP_PL_ARX_CONNUPDATE) {
-          arx = (struct flextcp_pl_arx *) (ctx->queues[q].rxq_base +
+        if (types[k] == TAS_FP_ARX_CONNUPDATE) {
+          arx = (struct tas_fp_arx *) (ctx->queues[q].rxq_base +
               qheads[q]);
           util_prefetch0(OPAQUE_PTR(arx->msg.connupdate.opaque) + 64);
           util_prefetch0(OPAQUE_PTR(arx->msg.connupdate.opaque));
@@ -433,9 +433,9 @@ static int fastpath_poll_vec(struct tas_context *ctx, int num,
       head = ctx->queues[q].rxq_head;
 
       t = arx->type;
-      assert(t != FLEXTCP_PL_ARX_INVALID);
+      assert(t != TAS_FP_ARX_INVALID);
 
-      if (t == FLEXTCP_PL_ARX_CONNUPDATE) {
+      if (t == TAS_FP_ARX_CONNUPDATE) {
         j = event_arx_connupdate(ctx, &arx->msg.connupdate, events + i,
             num - i, q);
       } else {
@@ -467,7 +467,7 @@ static int fastpath_poll_vec(struct tas_context *ctx, int num,
 
   if (found) {
     for (k = 0, q = ctx->next_queue; k < ctx->num_queues; k++) {
-      arx = (struct flextcp_pl_arx *) (ctx->queues[q].rxq_base +
+      arx = (struct tas_fp_arx *) (ctx->queues[q].rxq_base +
           ctx->queues[q].rxq_head);
       util_prefetch0(arx);
       q = (q + 1 < ctx->num_queues ? q + 1 : 0);
@@ -489,7 +489,7 @@ int tas_context_poll(struct tas_context *ctx, int num,
   /* prefetch queues */
   uint32_t k, q;
   for (k = 0, q = ctx->next_queue; k < ctx->num_queues; k++) {
-    util_prefetch0((struct flextcp_pl_arx *) (ctx->queues[q].rxq_base +
+    util_prefetch0((struct tas_fp_arx *) (ctx->queues[q].rxq_base +
         ctx->queues[q].rxq_head));
     q = (q + 1 < ctx->num_queues ? q + 1 : 0);
   }
@@ -510,14 +510,14 @@ int tas_context_poll(struct tas_context *ctx, int num,
 }
 
 int tas_context_tx_alloc(struct tas_context *ctx,
-    struct flextcp_pl_atx **patx, uint16_t core)
+    struct tas_fp_atx **patx, uint16_t core)
 {
   /* if queue is full, abort */
   if (ctx->queues[core].txq_avail == 0) {
     return -1;
   }
 
-  *patx = (struct flextcp_pl_atx *)
+  *patx = (struct tas_fp_atx *)
     (ctx->queues[core].txq_base + ctx->queues[core].txq_tail);
   return 0;
 }
@@ -538,12 +538,12 @@ static void flextcp_flexnic_kick(struct tas_context *ctx, int core)
 
 void tas_context_tx_done(struct tas_context *ctx, uint16_t core)
 {
-  ctx->queues[core].txq_tail += sizeof(struct flextcp_pl_atx);
+  ctx->queues[core].txq_tail += sizeof(struct tas_fp_atx);
   if (ctx->queues[core].txq_tail >= ctx->txq_len) {
     ctx->queues[core].txq_tail -= ctx->txq_len;
   }
 
-  ctx->queues[core].txq_avail -= sizeof(struct flextcp_pl_atx);
+  ctx->queues[core].txq_avail -= sizeof(struct tas_fp_atx);
 
   flextcp_flexnic_kick(ctx, core);
 }
@@ -719,7 +719,7 @@ static inline void event_kappin_st_conn_closed(
 }
 
 static inline int event_arx_connupdate(struct tas_context *ctx,
-    struct flextcp_pl_arx_connupdate *inev, struct tas_ll_event *outevs,
+    struct tas_fp_arx_connupdate *inev, struct tas_ll_event *outevs,
     int outn, uint16_t fn_core)
 {
   struct tas_ll_connection *conn;
@@ -732,7 +732,7 @@ static inline int event_arx_connupdate(struct tas_context *ctx,
 
   rx_bump = inev->rx_bump;
   tx_bump = inev->tx_bump;
-  eos = ((inev->flags & FLEXTCP_PL_ARX_FLRXDONE) == FLEXTCP_PL_ARX_FLRXDONE);
+  eos = ((inev->flags & TAS_FP_ARX_FLRXDONE) == TAS_FP_ARX_FLRXDONE);
 
   if (conn->status == CONN_OPEN_REQUESTED ||
       conn->status == CONN_ACCEPT_REQUESTED)
@@ -867,7 +867,7 @@ static inline int event_arx_connupdate(struct tas_context *ctx,
 
 static void txq_probe(struct tas_context *ctx, unsigned n)
 {
-  struct flextcp_pl_atx *atx;
+  struct tas_fp_atx *atx;
   uint32_t pos, i, q, tail, avail, len;
 
   len = ctx->txq_len;
@@ -885,7 +885,7 @@ static void txq_probe(struct tas_context *ctx, unsigned n)
 
     i = 0;
     while (avail < len && i < 2 * n) {
-      atx = (struct flextcp_pl_atx *) (ctx->queues[q].txq_base + pos);
+      atx = (struct tas_fp_atx *) (ctx->queues[q].txq_base + pos);
 
       if (atx->type != 0) {
         break;
@@ -907,7 +907,7 @@ static void txq_probe(struct tas_context *ctx, unsigned n)
 static void conns_bump(struct tas_context *ctx)
 {
   struct tas_ll_connection *c;
-  struct flextcp_pl_atx *atx;
+  struct tas_fp_atx *atx;
   uint8_t flags;
 
   while ((c = ctx->bump_pending_first) != NULL) {
@@ -920,7 +920,7 @@ static void conns_bump(struct tas_context *ctx)
     flags = 0;
 
     if ((c->flags & CONN_FLAG_TXEOS_ALLOC) == CONN_FLAG_TXEOS_ALLOC) {
-      flags |= FLEXTCP_PL_ATX_FLTXDONE;
+      flags |= TAS_FP_ATX_FLTXDONE;
     }
 
     atx->msg.connupdate.rx_bump = c->rxb_bump;
@@ -929,7 +929,7 @@ static void conns_bump(struct tas_context *ctx)
     atx->msg.connupdate.bump_seq = c->bump_seq++;
     atx->msg.connupdate.flags = flags;
     MEM_BARRIER();
-    atx->type = FLEXTCP_PL_ATX_CONNUPDATE;
+    atx->type = TAS_FP_ATX_CONNUPDATE;
 
     tas_context_tx_done(ctx, c->fn_core);
 
