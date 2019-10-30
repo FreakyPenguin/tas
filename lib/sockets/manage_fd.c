@@ -75,8 +75,7 @@ int flextcp_fd_salloc(struct socket **ps)
   /* no more file handles available */
   if (fd >= MAXSOCK) {
     free(s);
-    /* TODO: enusure this is the libc close */
-    close(fd);
+    tas_libc_close(fd);
     errno = EMFILE;
     return -1;
   }
@@ -146,6 +145,5 @@ void flextcp_fd_close(int fd)
   fhs[fd].data.s = NULL;
   fhs[fd].type = FH_UNUSED;
   MEM_BARRIER();
-  /* TODO: enusure this is the libc close */
-  close(fd);
+  tas_libc_close(fd);
 }
