@@ -38,6 +38,7 @@ enum cfg_params {
   CP_NIC_TX_LEN,
   CP_APP_KIN_LEN,
   CP_APP_KOUT_LEN,
+  CP_DATA_MEM_OFF,
   CP_ARP_TO,
   CP_ARP_TO_MAX,
   CP_TCP_RTT_INIT,
@@ -91,6 +92,10 @@ static struct option opts[] = {
     { .name = "app-kout-len",
       .has_arg = required_argument,
       .val = CP_APP_KOUT_LEN },
+    { .name = "data-mem-off",
+      .has_arg = required_argument,
+      .val = CP_DATA_MEM_OFF },
+
     { .name = "arp-timout",
       .has_arg = required_argument,
       .val = CP_ARP_TO },
@@ -256,6 +261,13 @@ int config_parse(struct configuration *c, int argc, char *argv[])
           goto failed;
         }
         break;
+      case CP_DATA_MEM_OFF:
+        if (parse_int64(optarg, &c->data_mem_off) != 0) {
+          fprintf(stderr, "data mem off parsing failed\n");
+          goto failed;
+        }
+        break;
+
       case CP_ARP_TO:
         if (parse_int32(optarg, &c->arp_to) != 0) {
           fprintf(stderr, "arp timeout parsing failed\n");
@@ -517,6 +529,7 @@ static int config_defaults(struct configuration *c, char *progname)
   c->nic_tx_len = 16 * 1024;
   c->app_kin_len = 1024 * 1024;
   c->app_kout_len = 1024 * 1024;
+  c->data_mem_off = 0;
   c->arp_to = 500;
   c->arp_to_max = 10000000;
   c->tcp_rtt_init = 50;
