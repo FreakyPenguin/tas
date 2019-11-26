@@ -101,12 +101,14 @@ again:
 
 int flextcp_init(void)
 {
-  if (flextcp_kernel_connect() != 0) {
+  int shmfd;
+
+  if (flextcp_kernel_connect(&shmfd) != 0) {
     fprintf(stderr, "flextcp_init: connecting to kernel failed\n");
     return -1;
   }
 
-  if (flexnic_driver_connect(&flexnic_info, &flexnic_mem) != 0) {
+  if (flexnic_driver_connect(&flexnic_info, &flexnic_mem, shmfd) != 0) {
     fprintf(stderr, "flextcp_init: connecting to flexnic failed\n");
     return -1;
   }

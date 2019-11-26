@@ -31,6 +31,7 @@
 extern struct configuration config;
 
 extern void *tas_shm;
+extern int tas_shm_fd;
 extern struct flextcp_pl_mem *fp_state;
 extern struct flexnic_info *tas_info;
 #if RTE_VER_YEAR < 19
@@ -52,7 +53,8 @@ int network_init(unsigned num_threads);
 void network_cleanup(void);
 
 /* used by trace and shm */
-void *util_create_shmsiszed(const char *name, size_t size, void *addr);
+void *util_create_shmsiszed(const char *name, size_t size, void *addr,
+    int *pfd);
 
 /* should become config options */
 #define FLEXNIC_DMA_MEM_SIZE (1024 * 1024 * 1024)
